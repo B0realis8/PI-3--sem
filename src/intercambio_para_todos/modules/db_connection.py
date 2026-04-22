@@ -3,27 +3,26 @@ import pandas as pd
 import psycopg2 as pg
 from psycopg2 import sql
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
 
 def db_connection():
 
-    db_config = {
-    'db_name': os.getenv("DB_NAME"),
-    'username': os.getenv("USER"),
-    '_port': os.getenv("PORT"),
-    'pswrd': os.getenv("PASSWORD"),
-    'db_host': os.getenv("DB_HOST")
+    db_uri = os.getenv("DB_URI")
+
+    connection = urlparse(db_uri)
+
+    connection_params = {
+        'dbname': connection.path[1:],
+        'user': connection.username,
+        'password': connection.password,
+        'host': connection.hostname,
+        'port': connection.port
     }
 
-    print(db_config['db_name'])
-    
     try:
-        conn = pg.connect(host=db_config['db_host'],
-                       dbname=db_config['db_name'],
-                       user=db_config['username'],
-                       password=db_config['pswrd'],
-                       port=db_config['_port']) 
+        conn = pg.connect(**connection_params)
         print("Conexão bem-sucedida!")
         return conn
     except Exception as e:
