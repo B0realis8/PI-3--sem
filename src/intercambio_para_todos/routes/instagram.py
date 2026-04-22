@@ -15,6 +15,8 @@ def content() -> None:
 
     ui.element('div').classes('divider mb-4')
 
+    mostrar_instagram()
+
 def mostrar_instagram():
     instagram = db_connection.get_data_from_db()
     ui.label(f"postID: {instagram[0][0]}, account_id: {instagram[0][1]}, account_type: {instagram[0][2]}")
