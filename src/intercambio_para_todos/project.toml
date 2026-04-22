@@ -1,0 +1,9 @@
+[project]
+name = "intercambio_para_todos"
+version = "0.0.0"
+description = "Interface de cadastros para a empresa Intercâmbio para Todos para a disciplina de PI 3"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    
+]
