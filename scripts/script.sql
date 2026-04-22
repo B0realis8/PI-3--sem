@@ -13,7 +13,7 @@ entrada NUMERIC(20,2),
 n_parcelas INT,
 valor_parcelas NUMERIC(10,2),
 comissao NUMERIC,
-lucro_total NUMERIC
+lucro_total NUMERIC,
 
 );
 
@@ -128,6 +128,7 @@ engagement_rate NUMERIC,
 followers_gained INT,
 caption_length INT,
 hashtags_count INT,
-performance_bucket VARCHAR(10)
+performance_bucket VARCHAR(10),
+produto_id INT REFERENCES produto(id_produto)
 
 )
