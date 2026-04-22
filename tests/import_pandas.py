@@ -31,3 +31,16 @@ analytics_data = pd.read_csv('databases/output-onlinetools.csv')
 print(analytics_data.head())
 print(analytics_data.shape)
 
+def update_instagram_table():
+    conn = pg.connect(host=db_host,
+                       dbname=db_name,
+                       user=username,
+                       password=pswrd,
+                       port=_port) 
+    cur = conn.cursor()
+    with open('databases/output-onlinetools.csv', 'r') as f:
+        next(f)
+        cur.copy_from(f, 'instagram', sep=',', columns=["account_id","account_type","follower_count","media_type","content_category","traffic_source","has_call_to_action","post_datetime","post_date","post_hour","day_of_week","likes","comments","shares","saves","reach","impression","engagement_rate","followers_gained","caption_length","hashtags_count","performance_bucket_label"])
+        conn.commit()
+        conn.close()
+
