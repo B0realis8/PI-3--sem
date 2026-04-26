@@ -39,11 +39,11 @@ def content() -> None:
         'defaultColDef': {'sortable': True},
         'autoSizeStrategy': {'type': 'fitGridWidth'},
         ':onGridSizeChanged': '(params) => params.api.sizeColumnsToFit()',
-    }, html_columns=[4]).classes('w-full').on("cellValueChanged", on_cell_change)
+    }, html_columns=[4]).classes('w-full h-150').on("cellValueChanged", on_cell_change)
     grid_ref['grid'] = grid
 
     search.on('update:model-value', lambda e: grid.run_grid_method(
-        'setGridOption', 'quickFilterText', e.args or ''))
+        'setGridOption', 'quickFilterText', e.args or ''))              #verificar diferentes condições de filtro
     
     ui.button('Adicionar Produto', on_click=lambda: dialog.open()).classes('button button-primary')
     
