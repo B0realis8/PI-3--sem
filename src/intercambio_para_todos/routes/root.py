@@ -6,6 +6,8 @@ from functools import wraps
 import header
 import routes.instagram
 import routes.cadastro_venda
+import routes.cadastro_orçamento
+import routes.produto 
 
 with open('C:\\Users\\Renan\\Desktop\\Fatec\\PI 3º sem\\src\\intercambio_para_todos\\config.json', encoding='utf-8') as f:
     config = json.load(f)
@@ -48,7 +50,8 @@ def with_base_layout(route_handler):
 def root():
     ui.sub_pages({
     '/': cadastro_venda,
-    '/mostrar_instagram': mostrar_instagram
+    '/mostrar_instagram': mostrar_instagram,
+    '/mostrar_produtos': mostrar_produtos
     })
 
     # ── Sub-page handlers ────────────────────────────────────────────────────────────
@@ -58,6 +61,9 @@ def cadastro_venda():
 
 def mostrar_instagram():
     routes.instagram.content()
+
+def mostrar_produtos():
+    routes.produto.content()
 
 def redirect_page2():
     ui.notify('Redirecionando...')
