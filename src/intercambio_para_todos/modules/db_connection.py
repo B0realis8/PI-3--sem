@@ -114,3 +114,11 @@ def update_produto(row_data):
     cur.close()
     conn.close()
     print(f"Updated: {row_data}")
+
+def delete_produto(id_produto):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM produto WHERE id_produto = %s", (id_produto,))
+    conn.commit()
+    cur.close()
+    conn.close()
