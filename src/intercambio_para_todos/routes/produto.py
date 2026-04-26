@@ -22,7 +22,7 @@ def content() -> None:
         {'field': 'id_produto', 'headerName': 'ID', 'sortable': True, 'editable': False, 'hide': True},
         {'field': 'nome_produto', 'headerName': 'Nome', 'sortable': True, 'editable': True},
         {'field': 'tipo', 'headerName': 'Tipo', 'sortable': True, 'editable': True},
-        {'field': 'valor_minimo', 'headerName': 'Valor Mínimo', 'sortable': True, 'editable': True},
+        {'field': 'valor_minimo', 'headerName': 'Valor Mínimo', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'pais', 'headerName': 'País', 'sortable': True, 'editable': True},
         {'field': 'cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
     ]
