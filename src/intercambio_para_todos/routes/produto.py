@@ -14,7 +14,7 @@ def content() -> None:
             ui.label('Produtos').classes('page-title')
             ui.label('Live overview · refreshes on demand').classes('text-sm text-muted')
         refresh_btn = ui.button('Refresh', icon='refresh', color='white') \
-            .props('flat no-caps').classes('button button-outline').on('click', lambda: update_grid(grid_ref))
+            .props('flat no-caps').classes('button button-outline').on('click', lambda: grid.update())
 
     ui.element('div').classes('divider mb-4')
 
