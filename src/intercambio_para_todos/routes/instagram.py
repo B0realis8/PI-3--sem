@@ -1,5 +1,6 @@
 from nicegui import ui,app,APIRouter
 from modules import db_connection
+from services.notifications import notify
 
 @ui.page('/mostrar_instagram')
 
@@ -18,13 +19,57 @@ def content() -> None:
     mostrar_instagram()
 
 def mostrar_instagram():
-    instagram = db_connection.get_data_from_db()
-    ui.label(f"postID: {instagram[0][0]}, account_id: {instagram[0][1]}, account_type: {instagram[0][2]}")
+    #ui.label(f"postID: {instagram[0][0]}, account_id: {instagram[0][1]}, account_type: {instagram[0][2]}")
     
     ui.button('Atualizar tabela Instagram', on_click=db_connection.update_instagram_table)
-    limit = 100
-    for post in instagram:
-        ui.label(f"postID: {post[0]}, account_id: {post[1]}, account_type: {post[2]}, follower_count: {post[3]}, media_type: {post[4]}, content_category: {post[5]}, traffic_source: {post[6]}, has_call_to_action: {post[7]}, post_datetime: {post[8]}, post_date: {post[9]}, post_hour: {post[10]}, day_of_week: {post[11]}, likes: {post[12]}, comments: {post[13]}, shares: {post[14]}, saves: {post[15]}, reach: {post[16]}, impression: {post[17]}, engagement_rate: {post[18]}, followers_gained: {post[19]}, caption_length: {post[20]}, hashtags_count: {post[21]}, performance_bucket_label: {post[22]}")
-        if instagram.index(post) == limit:
-            break
+    limit = 20
+    column_defs = [
+        {'field': 'post_id', 'headerName': 'Post ID', 'sortable': True},
+        {'field': 'account_id', 'headerName': 'Account ID', 'sortable': True},
+        {'field': 'account_type', 'headerName': 'Account Type', 'sortable': True},
+        {'field': 'follower_count', 'headerName': 'Follower Count', 'sortable': True},
+        {'field': 'media_type', 'headerName': 'Media Type', 'sortable': True},
+        {'field': 'content_category', 'headerName': 'Content Category', 'sortable': True},
+        {'field': 'traffic_source', 'headerName': 'Traffic Source', 'sortable': True},
+        {'field': 'has_call_to_action', 'headerName': 'Has Call To Action', 'sortable': True},
+        {'field': 'post_datetime', 'headerName': 'Post Datetime', 'sortable': True},
+        {'field': 'post_date', 'headerName': 'Post Date', 'sortable': True},
+        {'field': 'post_hour', 'headerName': 'Post Hour', 'sortable': True},
+        {'field': 'day_of_week', 'headerName': 'Day Of Week', 'sortable': True},
+        {'field': 'likes', 'headerName': 'Likes', 'sortable': True},
+        {'field': 'comments', 'headerName': 'Comments', 'sortable': True},
+        {'field': 'shares', 'headerName': 'Shares', 'sortable': True},
+        {'field': 'saves', 'headerName': 'Saves', 'sortable': True},
+        {'field': 'reach', 'headerName': 'Reach', 'sortable': True},
+        {'field': 'impression', 'headerName': 'Impression', 'sortable': True},
+        {'field': 'engagement_rate', 'headerName': 'Engagement Rate', 'sortable': True},
+        {'field': 'followers_gained', 'headerName': 'Followers Gained', 'sortable': True},
+        {'field': 'caption_length', 'headerName': 'Caption Length', 'sortable': True},
+        {'field': 'hashtags_count', 'headerName': 'Hashtags Count', 'sortable': True},
+        {'field': 'performance_bucket_label', 'headerName': 'Performance Bucket', 'sortable': True},
+    ]
+
+    grid_ref = {}
+    with ui.row().classes('w-full items-center gap-3 mb-3 flex-wrap'):
+        search = ui.input(placeholder='Search shipments…').classes('flex-1').props('outlined rounded dense clearable')
+        search.add_slot('prepend', '<q-icon name="search" />')
+        # ui.button('Export', color='white',
+        #           on_click=lambda: notify('Export started', type='info', title='Export')).props('flat no-caps').classes('button button-outline button-sm')
+
+    grid = ui.aggrid({
+        'columnDefs': column_defs,
+        'rowData': db_connection.get_data_from_db(),
+        'rowSelection': {'mode': 'multiRow'},
+        'defaultColDef': {'sortable': True},
+    }, html_columns=[4]).classes('w-full')
+    grid_ref['grid'] = grid
+
+    search.on('update:model-value', lambda e: grid.run_grid_method(
+        'setGridOption', 'quickFilterText', e.args or ''))
+    
+    with ui.row():
+        name = ui.input('Name')
+        age = ui.number('Age')
+
+    ui.button('Add User', on_click=lambda: db_connection.add_user(name.value, age.value))
 
