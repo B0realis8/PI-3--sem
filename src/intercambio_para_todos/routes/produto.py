@@ -18,13 +18,6 @@ def content() -> None:
 
     ui.element('div').classes('divider mb-4')
 
-    mostrar_produtos()
-
-# -------------------- Functions --------------------
-
-def mostrar_produtos():
-
-    limit = 20
     column_defs = [
         {'field': 'id_produto', 'headerName': 'ID', 'sortable': True, 'editable': False, 'hide': True},
         {'field': 'nome_produto', 'headerName': 'Nome', 'sortable': True, 'editable': True},
