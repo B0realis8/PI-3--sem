@@ -14,7 +14,7 @@ def frame(title: str, version: str, get_logo_func=None):
 
         if app.storage.user['sidebar-collapsed']:
             left_drawer.props("width=300")
-            corps.text = "Collapse"
+            corps.text = ""
             corps.icon = "chevron_left"
             await ui.run_javascript('new Promise(resolve => setTimeout(resolve, 50))')
             for label in sidebar_labels:
@@ -81,23 +81,8 @@ def frame(title: str, version: str, get_logo_func=None):
 
         ui.separator()
 
-        with ui.link('', '/icons').classes('w-full no-underline text-black').style('border-radius: 2rem;') as icons_link:
-            with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
-                icons_icon = ui.icon('grid_view').classes('ml-5 text-2xl flex-shrink-0')
-                icons_label = ui.label('Icons').classes('text-lg sidebar-label ml-3 flex-shrink-0')
-                sidebar_labels.append(icons_label)
-        nav_links.append({'link': icons_link, 'icon': icons_icon, 'patterns': ['/icons'], 'exact': False})
 
-
-
-        with ui.link('', '/design-system').classes('w-full no-underline text-black').style('border-radius: 2rem;') as design_system_link:
-            with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
-                design_system_icon = ui.icon('palette').classes('ml-5 text-2xl flex-shrink-0')
-                design_system_label = ui.label('Design System').classes('text-lg sidebar-label ml-3 flex-shrink-0')
-                sidebar_labels.append(design_system_label)
-        nav_links.append({'link': design_system_link, 'icon': design_system_icon, 'patterns': ['/design-system'], 'exact': False})
-
-        corps = ui.button("Collapse", icon='chevron_left').classes('absolute bottom-4 right-4 transition-all duration-300').props('flat').on('click', lambda: toggle_sidebar())
+        corps = ui.button("", icon='chevron_left').classes('absolute bottom-4 right-4 transition-all duration-300').props('flat').on('click', lambda: toggle_sidebar())
 
         def apply_highlight(active_item) -> None:
             for item in nav_links:
@@ -125,7 +110,7 @@ def frame(title: str, version: str, get_logo_func=None):
     # ── Sync drawer width and label visibility to the persisted state ────────────
     if app.storage.user['sidebar-collapsed']:
         left_drawer.props("width=300")
-        corps.text = "Collapse"
+        corps.text = ""
         corps.icon = "chevron_left"
         for label in sidebar_labels:
             label.classes(add='expanded')
