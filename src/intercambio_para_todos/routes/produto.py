@@ -72,7 +72,7 @@ def content() -> None:
                     cidade = ui.input(label='Cidade').classes('w-full')
 
                 with ui.row().classes("justify-end gap-2 q-mt-lg"):
-                    ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, nome_produto.value,tipo.value, valor_minimo.value,  pais.value, cidade.value)).classes('button button-primary').style('margin-right: 8px;')
+                    ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, nome_produto.value,tipo.value, valor_minimo.value,  pais.value, cidade.value,dialog)).classes('button button-primary').style('margin-right: 8px;')
                     ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
                     ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar produto'))
     
@@ -87,8 +87,9 @@ def on_cell_change(e):
     
     
     
-def update_grid(grid_ref, nome_produto, tipo, valor_minimo, pais, cidade):
+def update_grid(grid_ref, nome_produto, tipo, valor_minimo, pais, cidade,dialog):
     db_connection.add_produto(nome_produto, tipo, valor_minimo, pais, cidade)
+    dialog.close()
     
     novos_valores = db_connection.get_produtos()
     
