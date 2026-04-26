@@ -44,11 +44,13 @@ def content() -> None:
 
     search.on('update:model-value', lambda e: grid.run_grid_method(
         'setGridOption', 'quickFilterText', e.args or ''))           #verificar diferentes condições de filtro
+
+    with ui.page_sticky(position='bottom-right', x_offset=20, y_offset=20).classes('flex items-end gap-3'):
+        with ui.row().classes('items-center gap-3'):
+            ui.button('Adicionar Produto', on_click=lambda: dialog.open(), color='primary').classes('button button-primary')
+            ui.button("Excluir selecionados", on_click=lambda: delete_selected(grid_ref), color='danger').classes('button button-danger')
     
-    ui.button('Adicionar Produto', on_click=lambda: dialog.open()).classes('button button-primary')
-    ui.button("Delete selected", on_click=lambda: delete_selected(grid_ref))
-    
-    with ui.dialog() as dialog, ui.card().classes('w-200').style('padding: 20px'):
+    with ui.dialog() as dialog, ui.card().classes('w-150').style('padding: 20px'):
         ui.label('Adicionar Produto').classes('text-lg font-bold mb-4')
         with ui.row().classes("w-full"):
             with ui.card().classes("flex-grow"):
@@ -67,10 +69,10 @@ def content() -> None:
                     pais = ui.select(['Brasil', 'Estados Unidos', 'Reino Unido', 'Canadá', 'Austrália'], label='País',with_input=True,new_value_mode='add').classes('w-full')
 
                     ui.label('Cidade').classes('text-sm font-medium mb-1')
-                    cidade = ui.input(label='Cidade')
+                    cidade = ui.input(label='Cidade').classes('w-full')
 
                 with ui.row().classes("justify-end gap-2 q-mt-lg"):
-                    ui.button('Adiciona Produto', on_click=lambda: update_grid(grid_ref, nome_produto.value,tipo.value, valor_minimo.value,  pais.value, cidade.value)).classes('button button-primary').style('margin-right: 8px;')
+                    ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, nome_produto.value,tipo.value, valor_minimo.value,  pais.value, cidade.value)).classes('button button-primary').style('margin-right: 8px;')
                     ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
                     ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar produto'))
     
