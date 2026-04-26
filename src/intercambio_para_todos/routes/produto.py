@@ -1,4 +1,4 @@
-from nicegui import ui,app,APIRouter
+from nicegui import ui,app,APIRouter,events
 from modules import db_connection
 from services.notifications import notify
 import re
@@ -43,9 +43,10 @@ def content() -> None:
     grid_ref['grid'] = grid
 
     search.on('update:model-value', lambda e: grid.run_grid_method(
-        'setGridOption', 'quickFilterText', e.args or ''))              #verificar diferentes condições de filtro
+        'setGridOption', 'quickFilterText', e.args or ''))           #verificar diferentes condições de filtro
     
     ui.button('Adicionar Produto', on_click=lambda: dialog.open()).classes('button button-primary')
+    ui.button("Delete selected", on_click=lambda: delete_selected(grid_ref))
     
     with ui.dialog() as dialog, ui.card().classes('w-200').style('padding: 20px'):
         ui.label('Adicionar Produto').classes('text-lg font-bold mb-4')
@@ -72,7 +73,7 @@ def content() -> None:
                     ui.button('Adiciona Produto', on_click=lambda: update_grid(grid_ref, nome_produto.value,tipo.value, valor_minimo.value,  pais.value, cidade.value)).classes('button button-primary').style('margin-right: 8px;')
                     ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
                     ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar produto'))
-            
+    
 
             
 def on_cell_change(e):
@@ -93,3 +94,28 @@ def update_grid(grid_ref, nome_produto, tipo, valor_minimo, pais, cidade):
     grid = grid_ref.get('grid')
     grid.options['rowData'] = novos_valores
     grid.update()
+
+async def delete_selected(grid_ref):
+    grid = grid_ref.get('grid')
+    selected_rows = await grid.get_selected_rows()
+
+    with ui.dialog() as dialog, ui.card():
+        
+        ui.label('Deseja excluir o(s) item(s) selecionado(s)?')
+        with ui.row():
+            ui.button('Confirmar', on_click=lambda: dialog.submit(True))
+            ui.button('Cancelar', on_click=lambda: dialog.submit(False))
+
+    result = await dialog
+
+    if result == True:
+
+        for row in selected_rows:
+            db_connection.delete_produto(row['id_produto'])
+        data = db_connection.get_produtos()
+        grid.options['rowData'] = data
+        grid.update()
+        ui.notify('Item(s) excluído(s) com sucesso', type='info')
+    
+    else :
+        ui.notify('Operação cancelada', type='info')
