@@ -26,7 +26,7 @@ def mostrar_produtos():
 
     limit = 20
     column_defs = [
-        {'field': 'id_produto', 'headerName': 'ID', 'sortable': True, 'editable': True},
+        {'field': 'id_produto', 'headerName': 'ID', 'sortable': True, 'editable': False, 'hide': True},
         {'field': 'nome_produto', 'headerName': 'Nome', 'sortable': True, 'editable': True},
         {'field': 'tipo', 'headerName': 'Tipo', 'sortable': True, 'editable': True},
         {'field': 'valor_minimo', 'headerName': 'Valor Mínimo', 'sortable': True, 'editable': True},
