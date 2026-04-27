@@ -102,18 +102,18 @@ def add_produto(nome, tipo, valor_minimo, pais, cidade):
     conn.commit()
     conn.close()
 
-def update_produto(row_data):
+def update_produto(nome, tipo, valor_minimo, pais, cidade, id_produto):
 
     conn = db_connection()
     cur = conn.cursor()
     cur.execute(
         "UPDATE produto SET nome_produto = %s, tipo = %s, valor_minimo = %s, pais = %s, cidade = %s WHERE id_produto = %s",
-        (row_data["nome_produto"], row_data["tipo"], row_data["valor_minimo"], row_data["pais"], row_data["cidade"], row_data["id_produto"])
+        (nome, tipo, valor_minimo, pais, cidade, id_produto)
     )
     conn.commit()
     cur.close()
     conn.close()
-    print(f"Updated: {row_data}")
+    print(f"Updated: {id_produto}")
 
 def delete_produto(id_produto):
     conn = db_connection()
@@ -147,12 +147,12 @@ def add_orcamento(id_produto, id_voo, id_cliente, valor_total):
     conn.commit()
     conn.close()
 
-def update_orcamento(row_data):
+def update_orcamento(id_produto, id_voo, id_cliente, valor_total, id_orcamento):
     conn = db_connection()
     cur = conn.cursor()
     cur.execute(
         "UPDATE orcamento SET id_produto = %s, id_voo = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
-        (row_data["id_produto"], row_data["id_voo"], row_data["id_cliente"], row_data["valor_total"], row_data["id_orcamento"])
+        (id_produto, id_voo, id_cliente, valor_total, id_orcamento)
     )
     conn.commit()
     cur.close()
@@ -166,3 +166,16 @@ def delete_orcamento(id_orcamento):
     conn.commit()
     cur.close()
     conn.close()
+
+def edit_orcamento(id_produto, id_voo, id_cliente, valor_total, id_orcamento):
+
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE orcamento SET id_produto = %s, id_voo = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
+        (id_produto, id_voo, id_cliente, valor_total, id_orcamento)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"Atualizado: {id_orcamento}")
