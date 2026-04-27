@@ -122,3 +122,47 @@ def delete_produto(id_produto):
     conn.commit()
     cur.close()
     conn.close()
+
+# ── Orçamento Functions ─────────────────────────────────────────────
+
+def get_orcamentos():
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("orcamento"))
+        cur.execute(query)
+        orcamentos = cur.fetchall()
+        conn.close()
+        return orcamentos
+    else:
+        return []
+
+def add_orcamento(id_produto, id_voo, id_cliente, valor_total):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO orcamento (id_produto, id_voo, id_cliente, valor_total) VALUES (%s, %s, %s, %s)",
+        (id_produto, id_voo, id_cliente, valor_total)
+    )
+    conn.commit()
+    conn.close()
+
+def update_orcamento(row_data):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE orcamento SET id_produto = %s, id_voo = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
+        (row_data["id_produto"], row_data["id_voo"], row_data["id_cliente"], row_data["valor_total"], row_data["id_orcamento"])
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"Updated: {row_data}")
+
+def delete_orcamento(id_orcamento):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM orcamento WHERE id_orcamento = %s", (id_orcamento,))
+    conn.commit()
+    cur.close()
+    conn.close()

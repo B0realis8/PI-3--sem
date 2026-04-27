@@ -9,6 +9,7 @@ import routes.cadastro_venda
 import routes.cadastro_orçamento
 import routes.produto 
 
+
 with open('C:\\Users\\Renan\\Desktop\\Fatec\\PI 3º sem\\src\\intercambio_para_todos\\config.json', encoding='utf-8') as f:
     config = json.load(f)
 
@@ -51,7 +52,8 @@ def root():
     ui.sub_pages({
     '/': cadastro_venda,
     '/mostrar_instagram': mostrar_instagram,
-    '/mostrar_produtos': mostrar_produtos
+    '/mostrar_produtos': mostrar_produtos,
+    '/mostrar_orcamentos': mostrar_orcamentos
     })
 
     # ── Sub-page handlers ────────────────────────────────────────────────────────────
@@ -64,6 +66,9 @@ def mostrar_instagram():
 
 def mostrar_produtos():
     routes.produto.content()
+
+def mostrar_orcamentos():
+    routes.cadastro_orçamento.content()
 
 def redirect_page2():
     ui.notify('Redirecionando...')

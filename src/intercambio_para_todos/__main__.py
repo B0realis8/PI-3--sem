@@ -2,7 +2,7 @@ import nicegui as ng
 from nicegui import ui,app
 import psycopg2 as pg
 from modules import db_connection
-from routes import page2, produto, instagram,root
+from routes import produto, instagram,root, cadastro_venda, cadastro_orçamento
 import os
 from pathlib import Path
 
