@@ -64,6 +64,13 @@ def frame(title: str, version: str, get_logo_func=None):
                 sidebar_labels.append(dashboard_label)
         nav_links.append({'link': dashboard_link, 'icon': dashboard_icon, 'patterns': ['/'], 'exact': True})
 
+        with ui.link('', '/mostrar_orcamentos').classes('w-full no-underline text-black').style('border-radius: 2rem;') as orcamento_link:
+            with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
+                orcamento_icon = ui.icon('dashboard').classes('ml-5 text-2xl flex-shrink-0')
+                orcamento_label = ui.label('Cadastrar orçamento').classes('text-lg sidebar-label ml-3 flex-shrink-0')
+                sidebar_labels.append(orcamento_label)
+        nav_links.append({'link': orcamento_link, 'icon': orcamento_icon, 'patterns': ['/mostrar_orcamentos'], 'exact': False})
+
         with ui.link('', '/mostrar_produtos').classes('w-full no-underline text-black').style('border-radius: 2rem;') as produtos_link:
             with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
                 produtos_icon = ui.icon('shopping_cart').classes('ml-5 text-2xl flex-shrink-0')
