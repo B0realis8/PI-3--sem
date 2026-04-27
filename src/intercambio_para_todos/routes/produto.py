@@ -15,7 +15,7 @@ def content() -> None:
         with ui.column().classes('gap-0'):
             ui.label('Produtos').classes('page-title')
             ui.label('Live overview · refreshes on demand').classes('text-sm text-muted')
-        refresh_btn = ui.button('Refresh', icon='refresh', color='white') \
+        refresh_btn = ui.button('Atualizar', icon='refresh', color='white') \
             .props('flat no-caps').classes('button button-outline').on('click', lambda: grid.update())
 
     ui.element('div').classes('divider mb-4')
@@ -211,12 +211,3 @@ async def delete_selected(grid_ref,selected_row,edit_dialog):
         ui.notify('Operação cancelada', type='info')
 
     edit_dialog.close()
-
-async def edit_selected(grid_ref):
-    grid = grid_ref['grid']
-    selected_rows = await grid.get_selected_rows()
-    if selected_rows:
-        row = selected_rows[0]
-        return row['id_produto']
-    return None
-        # Use row data for editing
