@@ -8,6 +8,7 @@ import re
 
 def content() -> None:
 
+
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
         with ui.column().classes('gap-0'):
@@ -32,23 +33,25 @@ def content() -> None:
         search = ui.input(placeholder='Buscar…').classes('flex-1').props('outlined rounded dense clearable')
         search.add_slot('prepend', '<q-icon name="search" />')
 
-    grid = ui.aggrid({
-        'columnDefs': column_defs,
-        'rowData': db_connection.get_produtos(),
-        'rowSelection': {'mode': 'multiRow'},
-        'defaultColDef': {'sortable': True},
-        'autoSizeStrategy': {'type': 'fitGridWidth'},
-        ':onGridSizeChanged': '(params) => params.api.sizeColumnsToFit()',
-    }, html_columns=[4]).classes('w-full h-150').on("cellValueChanged", on_cell_change)
-    grid_ref['grid'] = grid
+    with ui.column().classes('w-full flex-grow').style('height: calc(100vh - 400px); overflow-y: auto;'):
 
-    search.on('update:model-value', lambda e: grid.run_grid_method(
-        'setGridOption', 'quickFilterText', e.args or ''))           #verificar diferentes condições de filtro
+        grid = ui.aggrid({
+            'columnDefs': column_defs,
+            'rowData': db_connection.get_produtos(),
+            'rowSelection': {'mode': 'multiRow'},
+            'defaultColDef': {'sortable': True},
+            'autoSizeStrategy': {'type': 'fitGridWidth'},
+            ':onGridSizeChanged': '(params) => params.api.sizeColumnsToFit()',
+        }, html_columns=[4]).classes('w-full flex-grow').on("cellValueChanged", on_cell_change)
+        grid_ref['grid'] = grid
+
+        search.on('update:model-value', lambda e: grid.run_grid_method(
+            'setGridOption', 'quickFilterText', e.args or ''))           #verificar diferentes condições de filtro
 
     with ui.page_sticky(position='bottom-right', x_offset=20, y_offset=20).classes('flex items-end gap-3'):
-        with ui.row().classes('items-center gap-3'):
-            ui.button('Adicionar Produto', on_click=lambda: dialog.open(), color='primary').classes('button button-primary')
-            ui.button("Excluir selecionados", on_click=lambda: delete_selected(grid_ref), color='danger').classes('button button-danger')
+        with ui.column().classes('items-center gap-3'):
+            ui.button(icon='add', on_click=lambda: dialog.open(), color='primary').props('fab')
+            ui.button(icon='delete', on_click=lambda: delete_selected(grid_ref), color='red').props('fab')
     
     with ui.dialog() as dialog, ui.card().classes('w-150').style('padding: 20px'):
         ui.label('Adicionar Produto').classes('text-lg font-bold mb-4')
@@ -101,11 +104,14 @@ def update_grid(grid_ref, nome_produto, tipo, valor_minimo, pais, cidade,dialog)
 async def delete_selected(grid_ref):
     grid = grid_ref.get('grid')
     selected_rows = await grid.get_selected_rows()
+    if not selected_rows:
+        ui.notify('Nenhum item selecionado para exclusão', type='warning')
+        return
 
-    with ui.dialog() as dialog, ui.card():
+    with ui.dialog() as dialog, ui.card().classes('p-7'):
         
         ui.label('Deseja excluir o(s) item(s) selecionado(s)?')
-        with ui.row():
+        with ui.row(align_items='center').classes('w-full justify-center'):
             ui.button('Confirmar', on_click=lambda: dialog.submit(True))
             ui.button('Cancelar', on_click=lambda: dialog.submit(False))
 
