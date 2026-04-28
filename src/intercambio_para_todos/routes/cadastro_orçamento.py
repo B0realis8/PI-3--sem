@@ -169,6 +169,8 @@ def content() -> None:
                 id_voo = row.get('id_voo')
                 id_cliente = row.get('id_cliente')
                 valor_total = row.get('valor_total')
+
+                
                 
                 # Clear inputs first to prevent stale values
                 edit_inputs['id_produto'].value = None
@@ -182,10 +184,18 @@ def content() -> None:
                 edit_inputs['valor_total'].value = None
                 
                 edit_dialog.open()
+
+                produtos = db_connection.get_produtos()
+                notify(str(produtos), type='info')
+                edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
+                
+                # Set options before setting values
+                
+                notify(nome_produto, type='info')
                 # Use timer to ensure dialog renders before setting values
                 ui.timer(0.05, lambda p=id_produto, n=nome_produto, t=tipo, pa=pais, ci=cidade, vm=valor_minimo, v=id_voo, c=id_cliente, vt=valor_total: (
                     edit_inputs['id_produto'].set_value(p),
-                    edit_inputs['nome_produto'].set_value(n),
+                    edit_inputs['nome_produto'].set_value(p),
                     edit_inputs['tipo'].set_value(t),
                     edit_inputs['pais'].set_value(pa),
                     edit_inputs['cidade'].set_value(ci),
