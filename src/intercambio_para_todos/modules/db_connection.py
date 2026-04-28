@@ -129,11 +129,38 @@ def get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("orcamento"))
+        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade FROM {} AS o JOIN {} AS p USING (id_produto)").format(
+            sql.Identifier("orcamento"),
+            sql.Identifier("produto")
+        )
         cur.execute(query)
         orcamentos = cur.fetchall()
         conn.close()
         return orcamentos
+    else:
+        return []
+
+def get_voos():
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("voo"))
+        cur.execute(query)
+        voos = cur.fetchall()
+        conn.close()
+        return voos
+    else:
+        return []
+
+def get_clientes():
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("cliente"))
+        cur.execute(query)
+        clientes = cur.fetchall()
+        conn.close()
+        return clientes
     else:
         return []
 
@@ -157,7 +184,6 @@ def update_orcamento(id_produto, id_voo, id_cliente, valor_total, id_orcamento):
     conn.commit()
     cur.close()
     conn.close()
-    print(f"Updated: {row_data}")
 
 def delete_orcamento(id_orcamento):
     conn = db_connection()
