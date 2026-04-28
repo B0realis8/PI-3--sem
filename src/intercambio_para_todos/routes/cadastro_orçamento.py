@@ -27,6 +27,12 @@ def content() -> None:
         {'field': 'id_voo', 'headerName': 'ID Voo', 'sortable': True, 'editable': True},
         {'field': 'id_cliente', 'headerName': 'ID Cliente', 'sortable': True, 'editable': True},
         {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+        {'field': 'nome_produto', 'headerName': 'Produto', 'sortable': True, 'editable': True},
+        {'field': 'tipo', 'headerName': 'Tipo', 'sortable': True, 'editable': True},
+        {'field': 'valor_minimo', 'headerName': 'Valor Base', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+        {'field': 'pais', 'headerName': 'País', 'sortable': True, 'editable': True},
+        {'field': 'cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
+
     ]
 
     grid_ref = {}
@@ -80,43 +86,47 @@ def content() -> None:
     with ui.dialog() as dialog, ui.card().classes('w-150').style('padding: 20px'):
         ui.label('Adicionar Orçamento').classes('text-lg font-bold mb-4')
         with ui.row().classes("w-full"):
-                with ui.column().classes("w-full"):
+            with ui.column().classes("w-full"):
 
-                    with ui.card().classes("w-full"):
-                        with ui.row().classes('gap-2 w-full'):
-                            
-                            ui.label('Produto').classes('text-sm font-medium mb-1')
-                            id_produto_input = ui.select([], label='Selecione o produto', with_input=True,on_change=on_selection_change).classes('w-full')
-                            with ui.column().classes("w-full"):
-                                nome_produto = ui.input(label='Nome do produto', placeholder='Produto').classes('hidden').props('readonly').style('')
-                                ui.label('Tipo do produto').classes('text-sm font-medium mb-1')
-                                tipo_produto = ui.input(label='Tipo do produto', placeholder='Tipo').classes('w-full').props('readonly')
-                                ui.label('País').classes('text-sm font-medium mb-1')
-                            with ui.column().classes("w-full"):
-                                pais_produto = ui.input(label='País', placeholder='País').classes('w-full').props('readonly')
-                                ui.label('Cidade').classes('text-sm font-medium mb-1')
-                                cidade_produto = ui.input(label='Cidade', placeholder='Cidade').classes('w-full').props('readonly')
-                                ui.label('Preço mínimo').classes('text-sm font-medium mb-1')
-                                preco_minimo_input = ui.number(label='Preço mínimo', placeholder='0.00', min=0, format='%.2f').props('readonly prefix=R$').classes('w-full')
+                with ui.card().classes("w-full"):
+                    with ui.row().classes('gap-2 w-full'):
+                        
+                        ui.label('Produto').classes('text-sm font-medium mb-1')
+                        id_produto_input = ui.select([], label='Selecione o produto', with_input=True,on_change=on_selection_change).classes('w-full')
+                        nome_produto = ui.input(label='Nome do produto', placeholder='Produto').classes('hidden').props('readonly')
+                    with ui.row().classes("w-full no-wrap"):
+                        with ui.column().classes('w-1/2'):
+                            ui.label('Tipo do produto').classes('text-sm font-medium mb-1')
+                            tipo_produto = ui.input(label='Tipo do produto', placeholder='Tipo').classes('w-full').props('readonly')
+                        with ui.column().classes('w-1/2'):
+                            ui.label('País').classes('text-sm font-medium mb-1')
+                            pais_produto = ui.input(label='País', placeholder='País').classes('w-full').props('readonly')
+                    with ui.row().classes("w-full no-wrap"):
+                        with ui.column().classes('w-1/2'):
+                            ui.label('Cidade').classes('text-sm font-medium mb-1')
+                            cidade_produto = ui.input(label='Cidade', placeholder='Cidade').classes('w-full').props('readonly')
+                        with ui.column().classes('w-1/2'):
+                            ui.label('Preço mínimo').classes('text-sm font-medium mb-1')
+                            preco_minimo_input = ui.number(label='Preço mínimo', placeholder='0.00', min=0, format='%.2f').props('readonly prefix=R$').classes('w-full')
 
 
-                    with ui.card().classes("w-full"):
-                        with ui.row().classes('gap-2 w-full'):
-                            with ui.column().classes("w-full"):
-                                ui.label('Voo').classes('text-sm font-medium mb-1')
-                                id_voo_input = ui.select([], label='Selecione o voo', with_input=True).classes('w-full')
+                with ui.card().classes("w-full"):
+                    with ui.row().classes('gap-2 w-full'):
+                        with ui.column().classes("w-full"):
+                            ui.label('Voo').classes('text-sm font-medium mb-1')
+                            id_voo_input = ui.select([], label='Selecione o voo', with_input=True).classes('w-full')
 
-                    with ui.card().classes("w-full"):
-                        with ui.row().classes('gap-2 w-full'):
-                            with ui.column().classes("w-full"):
-                                ui.label('Cliente').classes('text-sm font-medium mb-1')
-                                id_cliente_input = ui.select([], label='Selecione o cliente', with_input=True).classes('w-full')
+                with ui.card().classes("w-full"):
+                    with ui.row().classes('gap-2 w-full'):
+                        with ui.column().classes("w-full"):
+                            ui.label('Cliente').classes('text-sm font-medium mb-1')
+                            id_cliente_input = ui.select([], label='Selecione o cliente', with_input=True).classes('w-full')
 
-                    with ui.card().classes("w-full"):
-                        with ui.row().classes('gap-2 w-full'):
-                            with ui.column().classes("w-full"):
-                                ui.label('Valor Total').classes('text-sm font-medium mb-1')
-                                valor_total_input = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
+                with ui.card().classes("w-full"):
+                    with ui.row().classes('gap-2 w-full'):
+                        with ui.column().classes("w-full"):
+                            ui.label('Valor Total').classes('text-sm font-medium mb-1')
+                            valor_total_input = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
 
                 with ui.row().classes("justify-end gap-2 q-mt-lg"):
                     ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, id_produto_input.value, id_voo_input.value, id_cliente_input.value, valor_total_input.value, dialog)).classes('button button-primary').style('margin-right: 8px;')
@@ -151,54 +161,104 @@ def content() -> None:
                 # Capture values at selection time (not by reference)
                 row = selected_row['data']
                 id_produto = row.get('id_produto')
+                nome_produto = row.get('nome_produto')
+                tipo = row.get('tipo')
+                pais = row.get('pais')
+                cidade = row.get('cidade')
+                valor_minimo = row.get('valor_minimo')
                 id_voo = row.get('id_voo')
                 id_cliente = row.get('id_cliente')
                 valor_total = row.get('valor_total')
                 
                 # Clear inputs first to prevent stale values
                 edit_inputs['id_produto'].value = None
+                edit_inputs['nome_produto'].value = None
+                edit_inputs['tipo'].value = None
+                edit_inputs['pais'].value = None
+                edit_inputs['cidade'].value = None
+                edit_inputs['valor_minimo'].value = None
                 edit_inputs['id_voo'].value = None
                 edit_inputs['id_cliente'].value = None
                 edit_inputs['valor_total'].value = None
                 
                 edit_dialog.open()
                 # Use timer to ensure dialog renders before setting values
-                ui.timer(0.05, lambda p=id_produto, v=id_voo, c=id_cliente, vt=valor_total: (
+                ui.timer(0.05, lambda p=id_produto, n=nome_produto, t=tipo, pa=pais, ci=cidade, vm=valor_minimo, v=id_voo, c=id_cliente, vt=valor_total: (
                     edit_inputs['id_produto'].set_value(p),
+                    edit_inputs['nome_produto'].set_value(n),
+                    edit_inputs['tipo'].set_value(t),
+                    edit_inputs['pais'].set_value(pa),
+                    edit_inputs['cidade'].set_value(ci),
+                    edit_inputs['valor_minimo'].set_value(vm),
                     edit_inputs['id_voo'].set_value(v),
                     edit_inputs['id_cliente'].set_value(c),
                     edit_inputs['valor_total'].set_value(vt)
                 ), once=True)
         
-        grid.on('rowSelected', on_row_selected)
-        
+        grid.on('cellClicked', on_row_selected)
+    
+        def on_selection_change_edit(event):
+            selected_id = event.value
+            if selected_id is None:
+                return
+    
+            data = None
+            orcamentos = db_connection.get_produtos()
+            
+            for row in orcamentos:
+                if row['id_produto'] == selected_id:
+                    data = row
+                    break
+            
+            if data is None:
+                return  # No match found
+            notify(data['id_produto'], type='info')
+            notify(f"ID do Produto selecionado: {data['id_produto']}", type='success')
+            edit_inputs['id_produto'].set_value(data['id_produto'])
+            edit_inputs['pais'].set_value(data['pais'])
+            edit_inputs['cidade'].set_value(data['cidade'])
+            edit_inputs['tipo'].set_value(data['tipo'])
+            edit_inputs['valor_minimo'].set_value(data['valor_minimo'])
+            
 
     with ui.dialog() as edit_dialog, ui.card().classes('w-150').style('padding: 20px'):
         ui.label('Editar Orçamento').classes('text-lg font-bold mb-4')
         with ui.row().classes("w-full"):
-            with ui.card().classes("flex-grow"):
+            with ui.column().classes("w-full"):
 
-                with ui.row().classes("w-full"):
-                    with ui.card().classes("flex-grow"):
-                        with ui.row().classes('gap-2'):
+                with ui.card().classes("w-full"):
+                    with ui.row().classes('gap-2 w-full'):
                             ui.label('Produto').classes('text-sm font-large mb-1')
-                            edit_inputs['id_produto'] = ui.select([], label='Selecione o produto', with_input=True).classes('w-full')
+                            edit_inputs['nome_produto'] = ui.select([], label='Selecione o produto', with_input=True,on_change=on_selection_change_edit).classes('w-full')
+                            edit_inputs['id_produto'] = ui.input(label='ID do produto', placeholder='ID').classes('hidden').props('readonly')
+                    with ui.row().classes("w-full no-wrap"):
+                        with ui.column().classes('w-1/2'):
+                            ui.label('Tipo do produto').classes('text-sm font-medium mb-1')
+                            edit_inputs['tipo'] = ui.input(label='Tipo do produto', placeholder='Tipo').classes('w-full').props('readonly')
+                        with ui.column().classes('w-1/2'):
+                            ui.label('País').classes('text-sm font-medium mb-1')
+                            edit_inputs['pais'] = ui.input(label='País', placeholder='País').classes('w-full').props('readonly')
+                    with ui.row().classes("w-full no-wrap"):
+                        with ui.column().classes('w-1/2'):
+                            ui.label('Cidade').classes('text-sm font-medium mb-1')
+                            edit_inputs['cidade'] = ui.input(label='Cidade', placeholder='Cidade').classes('w-full').props('readonly')
+                        with ui.column().classes('w-1/2'):
+                            ui.label('Preço mínimo').classes('text-sm font-medium mb-1')
+                            edit_inputs['valor_minimo'] = ui.number(label='Preço mínimo', placeholder='0.00', min=0, format='%.2f').props('readonly prefix=R$').classes('w-full')
+                            
 
                 with ui.row().classes("w-full"):
-                    with ui.card().classes("flex-grow"):
-                        with ui.row().classes('gap-2'):
+                    with ui.row().classes('gap-2 w-full'):
                             ui.label('Voo').classes('text-sm font-large mb-1')
                             edit_inputs['id_voo'] = ui.select([], label='Selecione o voo', with_input=True).classes('w-full')
 
                 with ui.row().classes("w-full"):    
-                    with ui.card().classes("flex-grow"):
-                        with ui.row().classes('gap-2'):
+                    with ui.row().classes('gap-2 w-full'):
                             ui.label('Cliente').classes('text-sm font-large mb-1')
                             edit_inputs['id_cliente'] = ui.select([], label='Selecione o cliente', with_input=True).classes('w-full')
 
                 with ui.row().classes("w-full"):
-                    with ui.card().classes("flex-grow"):
-                        with ui.row().classes('gap-2'):
+                    with ui.row().classes('gap-2 w-full'):
                             ui.label('Valor Total').classes('text-sm font-large mb-1')
                             edit_inputs['valor_total'] = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
 
@@ -210,7 +270,8 @@ def content() -> None:
         
         # Load options for edit selects
         produtos = db_connection.get_produtos()
-        edit_inputs['id_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
+        #edit.inputs['id_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
+        edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
         
         voos = db_connection.get_voos()
         edit_inputs['id_voo'].options = {v['id_voo']: f"Voo {v['id_voo']} - {v.get('cidade_destino', '')}" for v in voos} if voos else {}
