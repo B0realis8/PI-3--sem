@@ -129,9 +129,11 @@ def get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade FROM {} AS o JOIN {} AS p USING (id_produto)").format(
+        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, json_agg(voo.*) AS voo_lista, voo.id_voo, c.id_cliente, c.nome FROM {} o LEFT JOIN {} p ON p.id_produto = o.id_produto LEFT JOIN {} voo ON o.id_voo = voo.id_voo LEFT JOIN {} c ON o.id_cliente = c.id_cliente GROUP BY o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.id_cliente, c.nome, voo.id_voo").format(
             sql.Identifier("orcamento"),
-            sql.Identifier("produto")
+            sql.Identifier("produto"),
+            sql.Identifier("voo"),
+            sql.Identifier("cliente")
         )
         cur.execute(query)
         orcamentos = cur.fetchall()
