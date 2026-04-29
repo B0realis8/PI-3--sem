@@ -2,6 +2,39 @@ from nicegui import ui,app,APIRouter,events
 from modules import db_connection
 from services.notifications import notify
 import re
+import json
+from datetime import datetime
+
+
+def format_dt(dt_str):
+    if not dt_str:
+        return ''
+    try:
+        # Adjust input format if needed (this assumes ISO-like string)
+        dt = datetime.fromisoformat(dt_str)
+        return dt.strftime('%d/%m/%Y %H:%M')
+    except Exception:
+        return dt_str  # fallback if parsing fails
+
+def format_orcamentos_for_grid(orcamentos):
+    for orc in orcamentos:
+        if 'voo_lista' in orc and orc['voo_lista']:
+            if isinstance(orc['voo_lista'], list):
+                formatted_voos = []
+                for v in orc['voo_lista']:
+                    if v:
+                        dt_saida = format_dt(v.get('dt_hr_saida'))
+                        dt_chegada = format_dt(v.get('dt_hr_chegada'))
+
+                        formatted = (
+                            f"Saída: {v.get('cidade_saida', '')} ({v.get('pais_saida', '')}), {v.get('aeroporto_saida', '')}\n"
+                            f"{dt_saida}\n\n"
+                            f"Chegada: {v.get('cidade_destino', '')} ({v.get('pais_destino', '')}), {v.get('aeroporto_destino', '')}\n"
+                            f"{dt_chegada}"
+                        )
+                        formatted_voos.append(formatted)
+                orc['voo_lista'] = '\n\n'.join(formatted_voos)
+    return orcamentos
 
 
 @ui.page('/mostrar_orcamento')
@@ -9,6 +42,15 @@ import re
 def content() -> None:
 
     ui.add_head_html('<style>.ag-row { cursor: pointer; }</style>')
+
+    ui.add_body_html("""
+                        <style>
+                            body {
+                                --ag-row-hover-color: rgb(227, 227, 227);
+                                --ag-line-height: 25px;
+                            }
+                        </style>
+                        """)
 
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
@@ -20,18 +62,22 @@ def content() -> None:
 
     ui.element('div').classes('divider mb-4')
     
-
+    join_dict_js = "x => Array.isArray(x) ? x.map(v => v.cidade_destino).join(', ') : x" 
     column_defs = [
         {'field': 'id_orcamento', 'headerName': 'ID', 'sortable': True, 'editable': False, 'hide': True},
-        {'field': 'id_produto', 'headerName': 'ID Produto', 'sortable': True, 'editable': True},
-        {'field': 'id_voo', 'headerName': 'ID Voo', 'sortable': True, 'editable': True},
-        {'field': 'id_cliente', 'headerName': 'ID Cliente', 'sortable': True, 'editable': True},
-        {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+        {'field': 'id_produto', 'headerName': 'ID Produto', 'sortable': True, 'editable': True, 'hide': True},
+        {'field': 'id_voo', 'headerName': 'ID Voo', 'sortable': True, 'editable': True, 'hide': True},
+        {'field': 'id_cliente', 'headerName': 'ID Cliente', 'sortable': True, 'editable': True, 'hide': True},
         {'field': 'nome_produto', 'headerName': 'Produto', 'sortable': True, 'editable': True},
         {'field': 'tipo', 'headerName': 'Tipo', 'sortable': True, 'editable': True},
         {'field': 'valor_minimo', 'headerName': 'Valor Base', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'pais', 'headerName': 'País', 'sortable': True, 'editable': True},
         {'field': 'cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
+        {'field': 'voo_lista', 'headerName': 'Voos', 'sortable': True, 'editable': True, 'wrapText': True, 'autoHeight': True, 'width': 600},
+        {'field': 'id_cliente', 'headerName': 'ID Cliente', 'sortable': True, 'editable': True, 'hide': True},
+        {'field': 'nome', 'headerName': 'Cliente', 'sortable': True, 'editable': True},
+        {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+
 
     ]
 
@@ -44,12 +90,13 @@ def content() -> None:
 
         grid = ui.aggrid({
             'columnDefs': column_defs,
-            'rowData': db_connection.get_orcamentos(),
+            'rowData': format_orcamentos_for_grid(db_connection.get_orcamentos()),
             'rowSelection': {'mode': 'multiRow'},
             'defaultColDef': {'sortable': True},
             'autoSizeStrategy': {'type': 'fitGridWidth'},
             ':onGridSizeChanged': '(params) => params.api.sizeColumnsToFit()',
             'rowSelection': 'single',
+            'defaultColDef': {'cellStyle': {'display': 'flex', 'align-items': 'center', 'white-space': 'pre-wrap' }},
         }, html_columns=[4]).classes('w-full flex-grow')
         grid_ref['grid'] = grid
 
@@ -294,7 +341,7 @@ def update_grid(grid_ref, id_produto, id_voo, id_cliente, valor_total, dialog):
     db_connection.add_orcamento(id_produto, id_voo, id_cliente, valor_total)
     dialog.close()
     
-    novos_valores = db_connection.get_orcamentos()
+    novos_valores = format_orcamentos_for_grid(db_connection.get_orcamentos())
     
     # Update AG Grid Data
     grid = grid_ref.get('grid')
@@ -311,7 +358,7 @@ def edit_orcamento(grid_ref, selected_row, id_produto, id_voo, id_cliente, valor
     db_connection.update_orcamento(id_produto, id_voo, id_cliente, valor_total, id_orcamento)
     dialog.close()
     
-    novos_valores = db_connection.get_orcamentos()
+    novos_valores = format_orcamentos_for_grid(db_connection.get_orcamentos())
     grid = grid_ref.get('grid')
     grid.options['rowData'] = novos_valores
     grid.update()
