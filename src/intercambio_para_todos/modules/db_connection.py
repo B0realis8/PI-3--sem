@@ -1,4 +1,5 @@
 import os
+from nicegui.ui import notify
 import pandas as pd
 import psycopg2 as pg
 import psycopg2.extras
@@ -129,11 +130,12 @@ def get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, json_agg(voo.*) AS voo_lista, voo.id_voo, c.id_cliente, c.nome FROM {} o LEFT JOIN {} p ON p.id_produto = o.id_produto LEFT JOIN {} voo ON o.id_voo = voo.id_voo LEFT JOIN {} c ON o.id_cliente = c.id_cliente GROUP BY o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.id_cliente, c.nome, voo.id_voo").format(
+        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, json_agg(voo.*) AS voo_lista, voo.id_voo, voo.valor_passagem, voo.id_companhia, c.id_cliente, c.nome FROM {} o LEFT JOIN {} p ON p.id_produto = o.id_produto LEFT JOIN {} voo ON o.id_voo = voo.id_voo LEFT JOIN {} c ON o.id_cliente = c.id_cliente LEFT JOIN {} comp ON voo.id_companhia = comp.id_companhia  GROUP BY o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.id_cliente, c.nome, voo.id_voo").format(
             sql.Identifier("orcamento"),
             sql.Identifier("produto"),
             sql.Identifier("voo"),
-            sql.Identifier("cliente")
+            sql.Identifier("cliente"),
+            sql.Identifier("companhia_aerea")
         )
         cur.execute(query)
         orcamentos = cur.fetchall()
@@ -165,10 +167,25 @@ def get_clientes():
         return clientes
     else:
         return []
-
-def add_orcamento(id_produto, id_voo, id_cliente, valor_total):
+    
+def add_cliente(nome, sexo, data_nascimento, cpf, telefone, adicionar_cliente, id_input_cliente):
     conn = db_connection()
     cur = conn.cursor()
+    cur.execute("INSERT INTO cliente (nome, sexo, data_nascimento, cpf, telefone) VALUES (%s, %s, %s, %s, %s) RETURNING id_cliente", (nome, sexo, data_nascimento, cpf, telefone))
+    id_cliente = cur.fetchone()[0]
+    conn.commit()
+    conn.close()
+    notify(f"Cliente adicionado com ID: {id_cliente}", type='success', title='Sucesso')
+    adicionar_cliente.close()
+    id_input_cliente.options = {c['id_cliente']: c['nome'] for c in get_clientes()} if get_clientes() else {}
+    id_input_cliente.value = id_cliente
+
+
+def add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, id_cliente, valor_total, obs):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, obs) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_voo", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, obs))
+    id_voo = cur.fetchone()[0]
     cur.execute(
         "INSERT INTO orcamento (id_produto, id_voo, id_cliente, valor_total) VALUES (%s, %s, %s, %s)",
         (id_produto, id_voo, id_cliente, valor_total)
@@ -207,3 +224,15 @@ def edit_orcamento(id_produto, id_voo, id_cliente, valor_total, id_orcamento):
     cur.close()
     conn.close()
     print(f"Atualizado: {id_orcamento}")
+
+def get_companhias():
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("companhia_aerea"))
+        cur.execute(query)
+        companhias = cur.fetchall()
+        conn.close()
+        return companhias
+    else:
+        return []
