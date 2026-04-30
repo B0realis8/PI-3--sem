@@ -24,7 +24,8 @@ id_cliente SERIAL PRIMARY KEY ,
 nome VARCHAR(100) NOT NULL,
 sexo CHAR(1) CHECK (sexo in('F','M')),
 data_nascimento DATE,
-cpf CHAR(11) NOT NULL UNIQUE
+cpf CHAR(11) NOT NULL UNIQUE,
+telefone CHAR(15)
 
 );
 
