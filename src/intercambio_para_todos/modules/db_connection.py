@@ -155,6 +155,18 @@ def get_voos():
         return voos
     else:
         return []
+    
+def get_voos_w_id(id):
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        query = sql.SQL("SELECT * FROM {} WHERE id_voo = %s").format(sql.Identifier("voo"))
+        cur.execute(query, (id,))
+        voos = cur.fetchall()
+        conn.close()
+        return voos
+    else:
+        return []
 
 def get_clientes():
     conn = db_connection()
@@ -193,12 +205,13 @@ def add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_s
     conn.commit()
     conn.close()
 
-def update_orcamento(id_produto, id_voo, id_cliente, valor_total, id_orcamento):
+def update_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, id_cliente, valor_total, id_orcamento, id_voo, obs):
     conn = db_connection()
     cur = conn.cursor()
+    cur.execute("UPDATE voo SET pais_saida = %s, cidade_saida = %s, aeroporto_saida = %s, dt_hr_saida = %s, pais_destino = %s, cidade_destino = %s, aeroporto_destino = %s, dt_hr_chegada = %s, valor_passagem = %s, id_companhia = %s, obs = %s WHERE id_voo = %s", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, obs, id_voo))
     cur.execute(
-        "UPDATE orcamento SET id_produto = %s, id_voo = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
-        (id_produto, id_voo, id_cliente, valor_total, id_orcamento)
+        "UPDATE orcamento SET id_produto = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
+        (id_produto, id_cliente, valor_total, id_orcamento)
     )
     conn.commit()
     cur.close()
@@ -212,18 +225,6 @@ def delete_orcamento(id_orcamento):
     cur.close()
     conn.close()
 
-def edit_orcamento(id_produto, id_voo, id_cliente, valor_total, id_orcamento):
-
-    conn = db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "UPDATE orcamento SET id_produto = %s, id_voo = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
-        (id_produto, id_voo, id_cliente, valor_total, id_orcamento)
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-    print(f"Atualizado: {id_orcamento}")
 
 def get_companhias():
     conn = db_connection()
