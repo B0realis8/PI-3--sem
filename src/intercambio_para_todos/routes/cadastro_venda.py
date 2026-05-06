@@ -95,6 +95,8 @@ def content() -> None:
             id_companhia_input.set_value(data['id_companhia'])
             nome_companhia_input.set_value(data['nome_companhia'])
             valor_passagem.set_value(data['valor_passagem'])
+            qtd_passagens_input.set_value(data['qtd_passagens'])
+            valor_total_passagem.set_value(data['valor_total'])
             observacoes_input.set_value(data['obs'])
 
     with ui.page_sticky(position='bottom-right', x_offset=20, y_offset=20).classes('flex items-end gap-3'):
@@ -162,6 +164,13 @@ def content() -> None:
                         nome_companhia_input = ui.input(label='Selecione a companhia aérea').props('outlined readonly').classes('w-2/3 rounded-md')
                         valor_passagem = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined readonly').classes('w-1/3 rounded-md')
                         id_companhia_input = ui.input(label='ID da companhia aérea', placeholder='ID da companhia aérea').classes('hidden').props('readonly')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        ui.label('Valor total da passagem').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                    with ui.row().classes("w-full no-wrap"):
+                        qtd_passagens_input = ui.number(label='Quantidade de passagens', placeholder='0', min=0).props('outlined readonly').classes('w-1/3 rounded-md')
+                        valor_total_passagem = ui.number(label='Valor total da passagem', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined readonly').classes('w-2/3 rounded-md')
+
                     with ui.row().classes("w-full no-wrap"):
                         ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                     with ui.row().classes("w-full no-wrap"):    
@@ -217,13 +226,32 @@ def content() -> None:
                         telefone_cliente_input = ui.input(label='Telefone', placeholder='Telefone').classes('w-2/6').props('mask="(##) #####-####" unmasked-value outlined rounded readonly')
 
         #              ────────Venda─────────────────────
+            def on_comissao_change(e):
+                if comissao_input.value != None:
+                    valor_final_input.value = float(valor_total_passagem.value) + float(comissao_input.value)
+
             with ui.column().classes("w-2/7 no-wrap"):
                 with ui.card().classes("w-full"):
                     with ui.row().classes('gap-2 w-full'):
-                        ui.label('Venda').classes('text-sm font-medium mb-1')
-                        nome_produto = ui.input(label='Nome do produto', placeholder='Produto').classes('hidden').props('readonly')
-                    with ui.row().classes('gap-2 w-full'):
+                        ui.label('Venda').classes('text-lg font-medium mb-1')
+                    with ui.row().classes('gap-2 w-1/2'):
+                        ui.label('Data da venda').classes('text-sm font-medium mb-1')
+                    with ui.row().classes('gap-2 w-1/2'):
                         data_venda_input = ui.date_input(label='Data da venda', placeholder='Data da venda',value=datetime.datetime.now().strftime('%Y-%m-%d')).classes('w-full').props('outlined rounded')
+                    with ui.row().classes('gap-2 w-1/2'):
+                        ui.label('Comissão').classes('text-sm font-medium mb-1')
+                    with ui.row().classes('gap-2 w-1/2'):
+                        comissao_input = ui.number(label='Comissão', placeholder='0.00', min=0, format='%.2f', on_change=on_comissao_change).props('prefix=R$ unmasked-value').classes('w-full').props('outlined rounded')
+                    with ui.row().classes('gap-2 w-full h-20'):
+                        ui.space()
+                        ui.separator()
+                        ui.space()
+                    with ui.row().classes('gap-2 w-full justify-end'):
+                        ui.label('Valor final').classes('text-lg font-bold mb-1')
+                    with ui.row().classes('gap-2 w-full justify-end'):
+                        valor_final_input = ui.number(label='Valor final', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ unmasked-value').classes('w-1/2 text-l font-bold').props('readonly input-class="text-right text-lg"')
+
+            
 
     produtos = db_connection.get_orcamentos()
     id_orcamento_input.options = {p['id_orcamento']: "Orçamento #"+str(p['id_orcamento']) for p in produtos} if produtos else {}
