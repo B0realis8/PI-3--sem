@@ -130,7 +130,7 @@ def get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, json_agg(voo.*) AS voo_lista, voo.id_voo, voo.valor_passagem, voo.id_companhia, c.id_cliente, c.nome FROM {} o LEFT JOIN {} p ON p.id_produto = o.id_produto LEFT JOIN {} voo ON o.id_voo = voo.id_voo LEFT JOIN {} c ON o.id_cliente = c.id_cliente LEFT JOIN {} comp ON voo.id_companhia = comp.id_companhia  GROUP BY o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.id_cliente, c.nome, voo.id_voo").format(
+        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, json_agg(voo.*) AS voo_lista, voo.id_voo, voo.valor_passagem, voo.qtd_passagens, voo.id_companhia, comp.nome_companhia, c.id_cliente, c.nome FROM {} o LEFT JOIN {} p ON p.id_produto = o.id_produto LEFT JOIN {} voo ON o.id_voo = voo.id_voo LEFT JOIN {} c ON o.id_cliente = c.id_cliente LEFT JOIN {} comp ON voo.id_companhia = comp.id_companhia  GROUP BY o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.id_cliente, c.nome, voo.id_voo, comp.id_companhia").format(
             sql.Identifier("orcamento"),
             sql.Identifier("produto"),
             sql.Identifier("voo"),
@@ -193,10 +193,10 @@ def add_cliente(nome, sexo, data_nascimento, cpf, telefone, adicionar_cliente, i
     id_input_cliente.value = id_cliente
 
 
-def add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, id_cliente, valor_total, obs):
+def add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, id_cliente, valor_total, obs):
     conn = db_connection()
     cur = conn.cursor()
-    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, obs) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_voo", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, obs))
+    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_voo", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, obs))
     id_voo = cur.fetchone()[0]
     cur.execute(
         "INSERT INTO orcamento (id_produto, id_voo, id_cliente, valor_total) VALUES (%s, %s, %s, %s)",
@@ -205,10 +205,10 @@ def add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_s
     conn.commit()
     conn.close()
 
-def update_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, id_cliente, valor_total, id_orcamento, id_voo, obs):
+def update_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, id_cliente, valor_total, id_orcamento, id_voo, obs):
     conn = db_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE voo SET pais_saida = %s, cidade_saida = %s, aeroporto_saida = %s, dt_hr_saida = %s, pais_destino = %s, cidade_destino = %s, aeroporto_destino = %s, dt_hr_chegada = %s, valor_passagem = %s, id_companhia = %s, obs = %s WHERE id_voo = %s", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, obs, id_voo))
+    cur.execute("UPDATE voo SET pais_saida = %s, cidade_saida = %s, aeroporto_saida = %s, dt_hr_saida = %s, pais_destino = %s, cidade_destino = %s, aeroporto_destino = %s, dt_hr_chegada = %s, valor_passagem = %s, qtd_passagens = %s, id_companhia = %s, obs = %s WHERE id_voo = %s", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, obs, id_voo))
     cur.execute(
         "UPDATE orcamento SET id_produto = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
         (id_produto, id_cliente, valor_total, id_orcamento)
@@ -235,5 +235,50 @@ def get_companhias():
         companhias = cur.fetchall()
         conn.close()
         return companhias
+    else:
+        return []
+    
+
+# Vendas ---------------
+
+def get_vendas():
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("vendas"))
+        cur.execute(query)
+        vendas = cur.fetchall()
+        conn.close()
+        return vendas
+    else:
+        return []
+
+def update_venda(data_venda, id_orcamento, quantidade, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, lucro_total, id_venda):
+
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE vendas SET data_venda = %s, id_orcamento = %s, quantidade = %s, forma_pgto = %s, valor_final = %s, entrada = %s, n_parcelas = %s, valor_parcelas = %s, comissao = %s, lucro_total = %s WHERE id_venda = %s",
+        (data_venda, id_orcamento, quantidade, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, lucro_total, id_venda)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"Updated: {id_venda}")
+
+def get_orcamento_vendas():
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        query = sql.SQL("SELECT * FROM {} \
+                        LEFT JOIN {} USING (id_produto)\
+                        LEFT JOIN {} USING (id_voo)\
+                        LEFT JOIN {} USING (id_companhia)\
+                        LEFT JOIN {} USING (id_cliente)")\
+        .format(sql.Identifier("orcamento"), sql.Identifier("produto"), sql.Identifier("voo"), sql.Identifier("companhia_aerea"), sql.Identifier("cliente"))
+        cur.execute(query)
+        orcamentos_venda = cur.fetchall()
+        conn.close()
+        return orcamentos_venda
     else:
         return []
