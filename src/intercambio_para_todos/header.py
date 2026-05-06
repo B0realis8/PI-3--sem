@@ -59,31 +59,31 @@ def frame(title: str, version: str, get_logo_func=None):
 
         with ui.link('', '/').classes('w-full no-underline text-black').style('border-radius: 2rem;') as dashboard_link:
             with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
-                dashboard_icon = ui.icon('dashboard').classes('ml-5 text-2xl flex-shrink-0')
+                dashboard_icon = ui.icon('sell').classes('ml-5 text-2xl flex-shrink-0')
                 dashboard_label = ui.label('Cadastrar venda').classes('text-lg sidebar-label ml-3 flex-shrink-0')
                 sidebar_labels.append(dashboard_label)
         nav_links.append({'link': dashboard_link, 'icon': dashboard_icon, 'patterns': ['/'], 'exact': True})
 
         with ui.link('', '/mostrar_orcamentos').classes('w-full no-underline text-black').style('border-radius: 2rem;') as orcamento_link:
             with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
-                orcamento_icon = ui.icon('dashboard').classes('ml-5 text-2xl flex-shrink-0')
+                orcamento_icon = ui.icon('edit_document').classes('ml-5 text-2xl flex-shrink-0')
                 orcamento_label = ui.label('Cadastrar orçamento').classes('text-lg sidebar-label ml-3 flex-shrink-0')
                 sidebar_labels.append(orcamento_label)
         nav_links.append({'link': orcamento_link, 'icon': orcamento_icon, 'patterns': ['/mostrar_orcamentos'], 'exact': False})
 
         with ui.link('', '/mostrar_produtos').classes('w-full no-underline text-black').style('border-radius: 2rem;') as produtos_link:
             with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
-                produtos_icon = ui.icon('shopping_cart').classes('ml-5 text-2xl flex-shrink-0')
+                produtos_icon = ui.icon('list_alt').classes('ml-5 text-2xl flex-shrink-0')
                 produtos_label = ui.label('Produtos').classes('text-lg sidebar-label ml-3 flex-shrink-0')
                 sidebar_labels.append(produtos_label)
         nav_links.append({'link': produtos_link, 'icon': produtos_icon, 'patterns': ['/mostrar_produtos'], 'exact': False})
 
-        with ui.link('', '/mostrar_instagram').classes('w-full no-underline text-black').style('border-radius: 2rem;') as instagram_link:
-            with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
-                instagram_icon = ui.icon('photo_camera').classes('ml-5 text-2xl flex-shrink-0')
-                instagram_label = ui.label('Instagram').classes('text-lg sidebar-label ml-3 flex-shrink-0')
-                sidebar_labels.append(instagram_label)
-        nav_links.append({'link': instagram_link, 'icon': instagram_icon, 'patterns': ['/mostrar_instagram'], 'exact': False})
+        # with ui.link('', '/mostrar_instagram').classes('w-full no-underline text-black').style('border-radius: 2rem;') as instagram_link:
+        #     with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
+        #         instagram_icon = ui.icon('photo_camera').classes('ml-5 text-2xl flex-shrink-0')
+        #         instagram_label = ui.label('Instagram').classes('text-lg sidebar-label ml-3 flex-shrink-0')
+        #         sidebar_labels.append(instagram_label)
+        # nav_links.append({'link': instagram_link, 'icon': instagram_icon, 'patterns': ['/mostrar_instagram'], 'exact': False})
 
 
         ui.separator()
