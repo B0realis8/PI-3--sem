@@ -78,6 +78,7 @@ def content() -> None:
         {'field': 'voo_lista', 'headerName': 'Voos', 'sortable': True, 'editable': True, 'wrapText': True, 'autoHeight': True, 'width': 600},
         {'field': 'id_companhia', 'headerName': 'ID Companhia', 'sortable': True, 'editable': True, 'hide': True},
         {'field': 'nome_companhia', 'headerName': 'Companhia Aérea', 'sortable': True, 'editable': True},
+        {'field':'qtd_passagens', 'headerName': 'Quantidade de Passagens', 'sortable': True, 'editable': True},
         {'field': 'valor_passagem', 'headerName': 'Valor Passagem', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'data_saida', 'headerName': 'Data da Saida', 'sortable': True, 'editable': False, 'hide': True},
@@ -233,6 +234,10 @@ def content() -> None:
                     with ui.row().classes('w-full no-wrap'):
                         id_companhia_input = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
                         valor_passagem = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined').classes('w-1/3 rounded-md')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        qtd_passagens = ui.number(label='Qtd. de passagens', placeholder='0', min=0).props('outlined').classes('w-1/3 rounded-md')
                     with ui.row().classes("w-full no-wrap"):
                         ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                     with ui.row().classes("w-full no-wrap"):    
@@ -256,7 +261,7 @@ def content() -> None:
                             valor_total_input = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
 
                 with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                    ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, id_produto_input.value, pais_saida.value, cidade_saida.value, aeroporto_saida.value, data_saida.value, hora_saida.value, pais_destino.value, cidade_destino.value, aeroporto_destino.value,data_chegada.value, hora_chegada.value, valor_passagem.value, id_companhia_input.value, id_cliente_input.value, valor_total_input.value, observacoes_input.value, dialog)).classes('button button-primary').style('margin-right: 8px;')
+                    ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, id_produto_input.value, pais_saida.value, cidade_saida.value, aeroporto_saida.value, data_saida.value, hora_saida.value, pais_destino.value, cidade_destino.value, aeroporto_destino.value,data_chegada.value, hora_chegada.value, valor_passagem.value, qtd_passagens.value, id_companhia_input.value, id_cliente_input.value, observacoes_input.value, dialog)).classes('button button-primary').style('margin-right: 8px;')
                     ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
                     ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
                     ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar orçamento'))
@@ -305,6 +310,7 @@ def content() -> None:
                 hora_saida = row.get('hora_saida')
                 data_chegada = row.get('data_chegada')
                 hora_chegada = row.get('hora_chegada')
+                qtd_passagens = row.get('qtd_passagens')
                 
                 # Clear inputs first to prevent stale values
                 edit_inputs['id_produto'].value = None
@@ -328,7 +334,7 @@ def content() -> None:
                 edit_inputs['valor_passagem'].value = None
                 edit_inputs['id_companhia_input'].value = None
                 edit_inputs['obs'].value = None
-                edit_inputs['valor_total'].value = None
+                edit_inputs['qtd_passagens'].value = None
                 
                 edit_dialog.open()
 
@@ -351,6 +357,7 @@ def content() -> None:
                 cidade_destino = data['cidade_destino']
                 aeroporto_destino = data['aeroporto_destino']
                 valor_passagem = data['valor_passagem']
+                qtd_passagens = data['qtd_passagens']
                 observacoes = data['obs']
                 id_companhia = data['id_companhia']
 
@@ -361,7 +368,7 @@ def content() -> None:
                 # Set options before setting values
                 
                 # Use timer to ensure dialog renders before setting values
-                ui.timer(0.05, lambda p=id_produto, n=nome_produto, t=tipo, pa=pais, ci=cidade, vm=valor_minimo, v=id_voo, c=id_cliente, vt=valor_total,p_s=pais_saida, c_s=cidade_saida, a_s=aeroporto_saida, d_s=data_saida, hr_s=hora_saida, p_dest=pais_destino, c_dest=cidade_destino, a_dest=aeroporto_destino, d_c=data_chegada, h_c=hora_chegada, vp=valor_passagem, i_comp=id_companhia, obs=observacoes: (
+                ui.timer(0.05, lambda p=id_produto, n=nome_produto, t=tipo, pa=pais, ci=cidade, vm=valor_minimo, v=id_voo, c=id_cliente, vt=valor_total,p_s=pais_saida, c_s=cidade_saida, a_s=aeroporto_saida, d_s=data_saida, hr_s=hora_saida, p_dest=pais_destino, c_dest=cidade_destino, a_dest=aeroporto_destino, d_c=data_chegada, h_c=hora_chegada, vp=valor_passagem,qtd=qtd_passagens, i_comp=id_companhia, obs=observacoes: (
                     edit_inputs['id_produto'].set_value(p),
                     edit_inputs['nome_produto'].set_value(p),
                     edit_inputs['tipo'].set_value(t),
@@ -383,7 +390,7 @@ def content() -> None:
                     edit_inputs['valor_passagem'].set_value(vp),
                     edit_inputs['id_companhia_input'].set_value(i_comp),
                     edit_inputs['obs'].set_value(obs),
-                    edit_inputs['valor_total'].set_value(vt)
+                    edit_inputs['qtd_passagens'].set_value(qtd)
 
                 ), once=True)
         
@@ -487,6 +494,10 @@ def content() -> None:
                     with ui.row().classes('w-full no-wrap'):
                         edit_inputs['id_companhia_input'] = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
                         edit_inputs['valor_passagem'] = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined').classes('w-1/3 rounded-md')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        edit_inputs['qtd_passagens'] = ui.number(label='Qtd. de passagens', placeholder='0', min=0).props('outlined').classes('w-1/3 rounded-md')
                     with ui.row().classes("w-full no-wrap"):
                         ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                     with ui.row().classes("w-full no-wrap"):    
@@ -502,16 +513,9 @@ def content() -> None:
                         edit_inputs['id_cliente'] = ui.select([], label='Selecione o cliente', with_input=True).classes('w-2/3 rounded-md').props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"')
                         ui.button('Novo cliente', on_click=lambda: adicionar_cliente.open()).classes('button button-secodary rounded-md h-full')
 
-#              ─────────Total─────────────────────────
-
-                with ui.card().classes("w-full"):
-                    with ui.row().classes('gap-2 w-full'):
-                        with ui.column().classes("w-full"):
-                            ui.label('Valor Total').classes('text-sm font-medium mb-1')
-                            edit_inputs['valor_total'] = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
                 
                 with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                    ui.button('Confirmar', on_click=lambda: edit_orcamento(grid_ref, edit_inputs['id_produto'].value, edit_inputs['pais_saida'].value, edit_inputs['cidade_saida'].value, edit_inputs['aeroporto_saida'].value, edit_inputs['data_saida'].value, edit_inputs['hora_saida'].value, edit_inputs['pais_destino'].value, edit_inputs['cidade_destino'].value, edit_inputs['aeroporto_destino'].value, edit_inputs['data_chegada'].value, edit_inputs['hora_chegada'].value, edit_inputs['valor_passagem'].value, edit_inputs['id_companhia_input'].value, edit_inputs['id_cliente'].value, edit_inputs['valor_total'].value,edit_inputs['id_voo'].value, edit_inputs['obs'].value, edit_dialog, selected_row)).classes('button button-primary').style('margin-right: 8px;')
+                    ui.button('Confirmar', on_click=lambda: edit_orcamento(grid_ref, edit_inputs['id_produto'].value, edit_inputs['pais_saida'].value, edit_inputs['cidade_saida'].value, edit_inputs['aeroporto_saida'].value, edit_inputs['data_saida'].value, edit_inputs['hora_saida'].value, edit_inputs['pais_destino'].value, edit_inputs['cidade_destino'].value, edit_inputs['aeroporto_destino'].value, edit_inputs['data_chegada'].value, edit_inputs['hora_chegada'].value, edit_inputs['valor_passagem'].value, edit_inputs['qtd_passagens'].value, edit_inputs['id_companhia_input'].value, edit_inputs['id_cliente'].value,edit_inputs['id_voo'].value, edit_inputs['obs'].value, edit_dialog, selected_row)).classes('button button-primary').style('margin-right: 8px;')
                     ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
                     ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar orçamento'))
         
@@ -550,12 +554,13 @@ def content() -> None:
         
 
             
-def update_grid(grid_ref, id_produto, pais_saida, cidade_saida, aeroporto_saida, data_saida, hora_saida, pais_destino, cidade_destino, aeroporto_destino, data_chegada, hora_chegada, valor_passagem, id_companhia, id_cliente, valor_total,obs, dialog):
+def update_grid(grid_ref, id_produto, pais_saida, cidade_saida, aeroporto_saida, data_saida, hora_saida, pais_destino, cidade_destino, aeroporto_destino, data_chegada, hora_chegada, valor_passagem,qtd_passagens, id_companhia, id_cliente,obs, dialog):
 
     dt_hr_chegada = f'{data_chegada}T{hora_chegada}:00' if data_chegada and hora_chegada else None
     dt_hr_saida = f'{data_saida}T{hora_saida}:00' if data_saida and hora_saida else None
+    valor_total = int(qtd_passagens) * valor_passagem
 
-    db_connection.add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, id_cliente, valor_total,obs)
+    db_connection.add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, id_cliente, valor_total,obs)
     dialog.close()
     
     novos_valores = format_orcamentos_for_grid(db_connection.get_orcamentos())
@@ -565,10 +570,11 @@ def update_grid(grid_ref, id_produto, pais_saida, cidade_saida, aeroporto_saida,
     grid.options['rowData'] = novos_valores
     grid.update()
 
-def edit_orcamento(grid_ref, id_produto, pais_saida, cidade_saida, aeroporto_saida, data_saida, hora_saida, pais_destino, cidade_destino, aeroporto_destino, data_chegada, hora_chegada, valor_passagem, id_companhia, id_cliente, valor_total, id_voo, obs, dialog, selected_row):
+def edit_orcamento(grid_ref, id_produto, pais_saida, cidade_saida, aeroporto_saida, data_saida, hora_saida, pais_destino, cidade_destino, aeroporto_destino, data_chegada, hora_chegada, valor_passagem, qtd_passagens, id_companhia, id_cliente, id_voo, obs, dialog, selected_row):
 
     dt_hr_chegada = f'{data_chegada}T{hora_chegada}:00' if data_chegada and hora_chegada else None
     dt_hr_saida = f'{data_saida}T{hora_saida}:00' if data_saida and hora_saida else None
+    valor_total = int(qtd_passagens) * valor_passagem
 
     row_data = selected_row['data']
     if not row_data:
@@ -576,7 +582,7 @@ def edit_orcamento(grid_ref, id_produto, pais_saida, cidade_saida, aeroporto_sai
         return
     
     id_orcamento = row_data.get('id_orcamento')
-    db_connection.update_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, id_companhia, id_cliente, valor_total, id_orcamento, id_voo, obs)
+    db_connection.update_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens,id_companhia, id_cliente, valor_total, id_orcamento, id_voo, obs)
     dialog.close()
     
     novos_valores = format_orcamentos_for_grid(db_connection.get_orcamentos())
