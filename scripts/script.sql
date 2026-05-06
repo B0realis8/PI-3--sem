@@ -6,9 +6,8 @@ CREATE TABLE vendas (
 id_venda SERIAL PRIMARY KEY,
 data_venda DATE NOT NULL,
 id_orcamento INT REFERENCES orcamento(id_orcamento),
-quantidade INT,
 forma_pgto VARCHAR(20),
-valor_total NUMERIC(20,2),
+valor_final NUMERIC(20,2),
 entrada NUMERIC(20,2),
 n_parcelas INT,
 valor_parcelas NUMERIC(10,2),
@@ -25,7 +24,9 @@ nome VARCHAR(100) NOT NULL,
 sexo CHAR(1) CHECK (sexo in('F','M')),
 data_nascimento DATE,
 cpf CHAR(11) NOT NULL UNIQUE,
-telefone CHAR(15)
+telefone CHAR(15),
+cidade VARCHAR(50),
+estado CHAR(2)
 
 );
 
@@ -78,6 +79,7 @@ aeroporto_destino CHAR(3),
 dt_hr_chegada TIMESTAMP,
 valor_passagem NUMERIC(10,2),
 id_companhia INT REFERENCES companhia_aerea(id_companhia),
+qtd_passagens INT,
 obs TEXT
 
 );
