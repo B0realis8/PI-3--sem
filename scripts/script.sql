@@ -62,7 +62,6 @@ endereco VARCHAR(100),
 diaria NUMERIC(10,2),
 dias INT,
 obs TEXT,
-id_orcamento INT REFERENCES orcamento(id_orcamento) ON DELETE CASCADE
 
 );
 
@@ -94,6 +93,7 @@ id_companhia INT REFERENCES companhia_aerea(id_companhia),
 qtd_passagens INT,
 obs TEXT,
 ida_volta VARCHAR(10) CHECK (ida_volta IN ('Ida', 'Volta'))
+id_orcamento INT REFERENCES orcamento(id_orcamento)
 
 );
 
@@ -102,7 +102,6 @@ CREATE TABLE orcamento (
 
 id_orcamento SERIAL PRIMARY KEY,
 id_produto INT REFERENCES produto(id_produto) ON DELETE CASCADE,
-id_voo INT REFERENCES voo(id_voo),
 id_cliente INT REFERENCES cliente(id_cliente),
 id_hospedagem INT REFERENCES hospedagem(id_hospedagem),
 id_servico INT REFERENCES servico(id_servico),
