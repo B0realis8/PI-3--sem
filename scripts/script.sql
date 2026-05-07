@@ -48,9 +48,21 @@ DROP TABLE IF EXISTS servico CASCADE;
 CREATE TABLE servico (
 
 id_servico SERIAL PRIMARY KEY,
-nome_servico VARCHAR(100),
 descricao TEXT,
-valor NUMERIC(10,2)
+valor_total_servicos NUMERIC(10,2),
+obs_servicos TEXT
+
+);
+
+DROP TABLE IF EXISTS hospedagem CASCADE;
+CREATE TABLE hospedagem (
+
+id_hospedagem SERIAL PRIMARY KEY,
+endereco VARCHAR(100),
+diaria NUMERIC(10,2),
+dias INT,
+obs TEXT,
+id_orcamento INT REFERENCES orcamento(id_orcamento) ON DELETE CASCADE
 
 );
 
@@ -80,7 +92,8 @@ dt_hr_chegada TIMESTAMP,
 valor_passagem NUMERIC(10,2),
 id_companhia INT REFERENCES companhia_aerea(id_companhia),
 qtd_passagens INT,
-obs TEXT
+obs TEXT,
+ida_volta VARCHAR(10) CHECK (ida_volta IN ('Ida', 'Volta'))
 
 );
 
@@ -91,6 +104,8 @@ id_orcamento SERIAL PRIMARY KEY,
 id_produto INT REFERENCES produto(id_produto) ON DELETE CASCADE,
 id_voo INT REFERENCES voo(id_voo),
 id_cliente INT REFERENCES cliente(id_cliente),
+id_hospedagem INT REFERENCES hospedagem(id_hospedagem),
+id_servico INT REFERENCES servico(id_servico),
 valor_total NUMERIC (20,2)
 );
 
