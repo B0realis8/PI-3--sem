@@ -12,16 +12,17 @@ def format_dt(dt_str):
     try:
         # Adjust input format if needed (this assumes ISO-like string)
         dt = datetime.fromisoformat(dt_str)
-        return dt.strftime('%d/%m/%Y %H:%M')
+        return dt.strftime('%d/%m/%Y - %H:%M')
     except Exception:
         return dt_str  # fallback if parsing fails
 
 def format_orcamentos_for_grid(orcamentos):
+    
     for orc in orcamentos:
-        if 'voo_lista' in orc and orc['voo_lista']:
-            if isinstance(orc['voo_lista'], list):
+        if 'voo_lista_ida' in orc and orc['voo_lista_ida']:
+            if isinstance(orc['voo_lista_ida'], list):
                 formatted_voos = []
-                for v in orc['voo_lista']:
+                for v in orc['voo_lista_ida']:
                     if v:
                         dt_saida = format_dt(v.get('dt_hr_saida'))
                         dt_chegada = format_dt(v.get('dt_hr_chegada'))
@@ -33,7 +34,24 @@ def format_orcamentos_for_grid(orcamentos):
                             f"{dt_chegada}"
                         )
                         formatted_voos.append(formatted)
-                orc['voo_lista'] = '\n\n'.join(formatted_voos)
+                orc['voo_lista_ida'] = '\n\n'.join(formatted_voos)
+
+        if 'voo_lista_volta' in orc and orc['voo_lista_volta']:
+            if isinstance(orc['voo_lista_volta'], list):
+                formatted_voos = []
+                for v in orc['voo_lista_volta']:
+                    if v:
+                        dt_saida = format_dt(v.get('dt_hr_saida'))
+                        dt_chegada = format_dt(v.get('dt_hr_chegada'))
+
+                        formatted = (
+                            f"Saída: {v.get('cidade_saida', '')} ({v.get('pais_saida', '')}), {v.get('aeroporto_saida', '')}\n"
+                            f"{dt_saida}\n\n"
+                            f"Chegada: {v.get('cidade_destino', '')} ({v.get('pais_destino', '')}), {v.get('aeroporto_destino', '')}\n"
+                            f"{dt_chegada}"
+                        )
+                        formatted_voos.append(formatted)
+                orc['voo_lista_volta'] = '\n\n'.join(formatted_voos)
     return orcamentos
 
 
@@ -65,6 +83,7 @@ def content() -> None:
     
     join_dict_js = "x => Array.isArray(x) ? x.map(v => v.cidade_destino).join(', ') : x" 
     column_defs = [
+
         {'field': 'id_orcamento', 'headerName': 'ID', 'sortable': True, 'editable': False, 'hide': True},
         {'field': 'id_produto', 'headerName': 'ID Produto', 'sortable': True, 'editable': True, 'hide': True},
         {'field': 'id_voo', 'headerName': 'ID Voo', 'sortable': True, 'editable': True, 'hide': True},
@@ -75,16 +94,23 @@ def content() -> None:
         {'field': 'valor_minimo', 'headerName': 'Valor Base', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'pais', 'headerName': 'País', 'sortable': True, 'editable': True},
         {'field': 'cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
-        {'field': 'voo_lista', 'headerName': 'Voos', 'sortable': True, 'editable': True, 'wrapText': True, 'autoHeight': True, 'width': 600},
-        {'field': 'id_companhia', 'headerName': 'ID Companhia', 'sortable': True, 'editable': True, 'hide': True},
-        {'field': 'nome_companhia', 'headerName': 'Companhia Aérea', 'sortable': True, 'editable': True},
-        {'field':'qtd_passagens', 'headerName': 'Quantidade de Passagens', 'sortable': True, 'editable': True},
-        {'field': 'valor_passagem', 'headerName': 'Valor Passagem', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+
+        {'field': 'voo_lista_ida', 'headerName': 'Voo (Ida)', 'sortable': True, 'editable': True, 'wrapText': True, 'autoHeight': True, 'width': 600},
+        {'field': 'companhia_aerea_ida', 'headerName': 'Companhia Aérea (Ida)', 'sortable': True, 'editable': True},
+        {'field': 'valor_passagem_ida', 'headerName': 'Valor Passagem (Ida)', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+        {'field': 'qtd_passagens_ida', 'headerName': 'Qtd. Passagens (Ida)', 'sortable': True, 'editable': True},
+
+
+        {'field': 'voo_lista_volta', 'headerName': 'Voo (Volta)', 'sortable': True, 'editable': True, 'wrapText': True, 'autoHeight': True, 'width': 600},
+        {'field': 'companhia_aerea_volta', 'headerName': 'Companhia Aérea (Volta)', 'sortable': True, 'editable': True},
+        {'field': 'valor_passagem_volta', 'headerName': 'Valor Passagem (Volta)', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+        {'field': 'qtd_passagens_volta', 'headerName': 'Qtd. Passagens (Volta)', 'sortable': True, 'editable': True},
+
         {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
-        {'field': 'data_saida', 'headerName': 'Data da Saida', 'sortable': True, 'editable': False, 'hide': True},
-        {'field': 'hora_saida', 'headerName': 'Hora da Saida', 'sortable': True, 'editable': False, 'hide': True},
-        {'field': 'data_chegada', 'headerName': 'Data da Chegada', 'sortable': True, 'editable': False, 'hide': True},
-        {'field': 'hora_chegada', 'headerName': 'Hora da Chegada', 'sortable': True, 'editable': False, 'hide': True},
+        {'field': 'data_saida_ida', 'headerName': 'Data da Saida', 'sortable': True, 'editable': False, 'hide': True},
+        {'field': 'hora_saida_ida', 'headerName': 'Hora da Saida', 'sortable': True, 'editable': False, 'hide': True},
+        {'field': 'data_chegada_volta', 'headerName': 'Data da Chegada', 'sortable': True, 'editable': False, 'hide': True},
+        {'field': 'hora_chegada_volta', 'headerName': 'Hora da Chegada', 'sortable': True, 'editable': False, 'hide': True},
 
 
 
@@ -154,19 +180,21 @@ def content() -> None:
             email_cliente.set_value(data['email_cliente'])
             telefone_cliente.set_value(data['telefone_cliente'])
             
+    def on_value_change(e):
 
+        valor_total_input.value = float(valor_passagem.value or 0) * int(qtd_passagens.value or 0) + float(valor_passagem_volta.value or 0) * int(qtd_passagens_volta.value or 0) + float(valor_total_servicos_input.value or 0) + (float(diaria_input.value or 0) * int(dias_input.value or 0))
     
-    with ui.dialog() as dialog, ui.card().classes('w-180').style('padding: 20px'):
+    with ui.dialog() as dialog, ui.card().classes('w-320').style('padding: 20px'):
         ui.label('Adicionar Orçamento').classes('text-lg font-bold mb-4')
-        with ui.row().classes("w-full"):
-            with ui.column().classes("w-full"):
 
+        with ui.row().classes("w-full no-wrap"):
+            with ui.column().classes("w-1/2 no-wrap"):
                 with ui.card().classes("w-full"):
 
-#              ────────Produto─────────────────────
+        #              ────────Produto─────────────────────
 
                     with ui.row().classes('gap-2 w-full'):
-                        ui.label('Produto').classes('text-sm font-medium mb-1')
+                        ui.label('Produto').classes('text-lg font-medium mb-1')
                         id_produto_input = ui.select([], label='Selecione o produto', with_input=True,on_change=on_selection_change_produto).classes('w-full rounded-md').props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left" popup-content-style="text-align: left;" menu-class="left-align-menu"')
                         nome_produto = ui.input(label='Nome do produto', placeholder='Produto').classes('hidden').props('readonly')
                     with ui.row().classes("w-full no-wrap"):
@@ -184,89 +212,227 @@ def content() -> None:
                             ui.label('Preço mínimo').classes('text-sm font-medium mb-1')
                             preco_minimo_input = ui.number(label='Preço mínimo', placeholder='0.00', min=0, format='%.2f').props('readonly prefix=R$').classes('w-full')
 
-#              ─────────Voo─────────────────────────
+        #              ─────────Voo─────────────────────────
 
                 with ui.card().classes("w-full"):
                     with ui.row().classes('w-full no-wrap'):
                         ui.label('Voo').classes('text-lg font-medium mb-1')
                         ui.icon('flight', color="#DFDFDF", size="md").classes('ml-auto justify-self-end h-full')
-                    with ui.row().classes("w-full no-wrap"):
-                        ui.label('Saída').classes('text-medium font-medium mb-1')
-                    ui.separator()        
-                    with ui.row().classes("w-full no-wrap"):
-                        ui.label('País de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                        ui.label('Cidade de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                        ui.label('Aeroporto de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        pais_saida = ui.input(label='País de saída', placeholder='País de saída').classes('w-full rounded-md').props('outlined')
-                        cidade_saida = ui.input(label='Cidade de saída', placeholder='Cidade de saída').classes('w-full rounded-md').props('outlined')
-                        aeroporto_saida = ui.input(label='Aeroporto de saída', placeholder='Aeroporto de saída').classes('w-full rounded-md').props('outlined')
-                    with ui.row().classes("w-full no-wrap"):
-                        ui.label('Data de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
-                        ui.label('Horário de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        data_saida = ui.date_input(label='Data de saída', placeholder='Data de saída').classes('w-1/4 rounded-md').props('outlined')
-                        hora_saida = ui.time_input(label='Horário de saída', placeholder='Horário de saída').classes('w-1/4 rounded-md').props('outlined')
-                        dt_hr_saida = f'{data_saida.value}T{hora_saida.value}:00' if data_saida.value and hora_saida.value else None
-                    ui.space()
-                    with ui.row().classes("w-full no-wrap"):
-                        ui.label('Chegada').classes('text-medium font-medium mb-1')
-                    ui.separator()
-                    with ui.row().classes("w-full no-wrap"):
-                        ui.label('País de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                        ui.label('Cidade de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                        ui.label('Aeroporto de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        pais_destino = ui.input(label='País de destino', placeholder='País de destino').classes('w-1/3 rounded-md').props('outlined')
-                        cidade_destino = ui.input(label='Cidade de destino', placeholder='Cidade de destino').classes('w-1/3 rounded-md').props('outlined')
-                        aeroporto_destino = ui.input(label='Aeroporto de destino', placeholder='Aeroporto de destino').classes('w-1/3 rounded-md').props('outlined')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Data de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
-                        ui.label('Horário de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        data_chegada = ui.date_input(label='Data de chegada', placeholder='Data de chegada').classes('w-1/4 rounded-md').props('outlined') 
-                        hora_chegada = ui.time_input(label='Horário de chegada', placeholder='Horário de chegada').classes('w-1/4 rounded-md').props('format24h outlined')
-                        
 
-                    with ui.row().classes("w-full no-wrap"):
-                        ui.label('Companhia aérea').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                        ui.label('Valor da passagem').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        id_companhia_input = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
-                        valor_passagem = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined').classes('w-1/3 rounded-md')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        qtd_passagens = ui.number(label='Qtd. de passagens', placeholder='0', min=0).props('outlined').classes('w-1/3 rounded-md')
-                    with ui.row().classes("w-full no-wrap"):
-                        ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                    with ui.row().classes("w-full no-wrap"):    
-                        observacoes_input = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')
+                    #--------------------------------------Ida
+
+                    with ui.expansion('Ida', icon='flight').classes('w-full no-wrap'):
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Saída').classes('text-medium font-medium mb-1')
+                        ui.separator()        
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('País de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Cidade de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Aeroporto de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            pais_saida = ui.input(label='País de saída', placeholder='País de saída').classes('w-full rounded-md').props('outlined')
+                            cidade_saida = ui.input(label='Cidade de saída', placeholder='Cidade de saída').classes('w-full rounded-md').props('outlined')
+                            aeroporto_saida = ui.input(label='Aeroporto de saída', placeholder='Aeroporto de saída').classes('w-full rounded-md').props('outlined')
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Data de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                            ui.label('Horário de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            data_saida = ui.date_input(label='Data de saída', placeholder='Data de saída').classes('w-1/4 rounded-md').props('outlined')
+                            hora_saida = ui.time_input(label='Horário de saída', placeholder='Horário de saída').classes('w-1/4 rounded-md').props('outlined')
+                            dt_hr_saida = f'{data_saida.value}T{hora_saida.value}:00' if data_saida.value and hora_saida.value else None
+                        ui.space()
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Chegada').classes('text-medium font-medium mb-1')
+                        ui.separator()
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('País de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Cidade de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Aeroporto de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            pais_destino = ui.input(label='País de destino', placeholder='País de destino').classes('w-1/3 rounded-md').props('outlined')
+                            cidade_destino = ui.input(label='Cidade de destino', placeholder='Cidade de destino').classes('w-1/3 rounded-md').props('outlined')
+                            aeroporto_destino = ui.input(label='Aeroporto de destino', placeholder='Aeroporto de destino').classes('w-1/3 rounded-md').props('outlined')
+                        with ui.row().classes('w-full no-wrap'):
+                            ui.label('Data de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                            ui.label('Horário de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            data_chegada = ui.date_input(label='Data de chegada', placeholder='Data de chegada').classes('w-1/4 rounded-md').props('outlined') 
+                            hora_chegada = ui.time_input(label='Horário de chegada', placeholder='Horário de chegada').classes('w-1/4 rounded-md').props('format24h outlined')
+                            dt_hr_chegada = f'{data_chegada.value}T{hora_chegada.value}:00' if data_chegada.value and hora_chegada.value else None
                             
-#              ────────Cliente─────────────────────
 
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Companhia aérea').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                            ui.label('Valor da passagem').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            id_companhia_input = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
+                            valor_passagem = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f',on_change=on_value_change).props('prefix=R$ outlined').classes('w-1/3 rounded-md')
+                        with ui.row().classes('w-full no-wrap'):
+                            ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            qtd_passagens = ui.number(label='Qtd. de passagens', placeholder='0', min=0,on_change=on_value_change).props('outlined').classes('w-1/3 rounded-md')
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                        with ui.row().classes("w-full no-wrap"):    
+                            observacoes_input = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')
+
+                    #--------------------------------------Volta
+
+                    with ui.expansion('Volta', icon='flight').classes('w-full no-wrap'):
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Saída').classes('text-medium font-medium mb-1')
+                        ui.separator()        
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('País de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Cidade de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Aeroporto de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            pais_saida_volta = ui.input(label='País de saída', placeholder='País de saída').classes('w-full rounded-md').props('outlined')
+                            cidade_saida_volta = ui.input(label='Cidade de saída', placeholder='Cidade de saída').classes('w-full rounded-md').props('outlined')
+                            aeroporto_saida_volta = ui.input(label='Aeroporto de saída', placeholder='Aeroporto de saída').classes('w-full rounded-md').props('outlined')
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Data de saída').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                            ui.label('Horário de saída').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            data_saida_volta = ui.date_input(label='Data de saída', placeholder='Data de saída').classes('w-2/4 rounded-md').props('outlined')
+                            hora_saida_volta = ui.time_input(label='Horário de saída', placeholder='Horário de saída').classes('w-2/4 rounded-md').props('outlined')
+                            dt_hr_saida = f'{data_saida_volta.value}T{hora_saida_volta.value}:00' if data_saida_volta.value and hora_saida_volta.value else None
+                        ui.space()
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Chegada').classes('text-medium font-medium mb-1')
+                        ui.separator()
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('País de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Cidade de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Aeroporto de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            pais_destino_volta = ui.input(label='País de destino', placeholder='País de destino').classes('w-1/3 rounded-md').props('outlined')
+                            cidade_destino_volta = ui.input(label='Cidade de destino', placeholder='Cidade de destino').classes('w-1/3 rounded-md').props('outlined')
+                            aeroporto_destino_volta = ui.input(label='Aeroporto de destino', placeholder='Aeroporto de destino').classes('w-1/3 rounded-md').props('outlined')
+                        with ui.row().classes('w-full no-wrap'):
+                            ui.label('Data de chegada').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                            ui.label('Horário de chegada').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            data_chegada_volta = ui.date_input(label='Data de chegada', placeholder='Data de chegada').classes('w-2/4 rounded-md').props('outlined') 
+                            hora_chegada_volta = ui.time_input(label='Horário de chegada', placeholder='Horário de chegada').classes('w-2/4 rounded-md').props('format24h outlined')
+                            dt_hr_chegada_volta = f'{data_chegada.value}T{hora_chegada.value}:00' if data_chegada.value and hora_chegada.value else None
+                            
+
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Companhia aérea').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                            ui.label('Valor da passagem').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            id_companhia_input_volta = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
+                            valor_passagem_volta = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f', on_change=on_value_change).props('prefix=R$ outlined').classes('w-1/3 rounded-md')
+                        with ui.row().classes('w-full no-wrap'):
+                            ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                        with ui.row().classes('w-full no-wrap'):
+                            qtd_passagens_volta = ui.number(label='Qtd. de passagens', placeholder='0', min=0, on_change=on_value_change).props('outlined').classes('w-1/3 rounded-md')
+                        with ui.row().classes("w-full no-wrap"):
+                            ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                        with ui.row().classes("w-full no-wrap"):    
+                            observacoes_input_volta = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')    
+                            
+        #              ────────Cliente─────────────────────
+            with ui.column().classes("w-1/2 no-wrap"):
                 with ui.card().classes("w-full"):
                     with ui.row().classes('w-full no-wrap'):
-                        ui.label('Cliente').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                        ui.label('Cliente').classes('text-lg font-medium mb-1 w-2/3 align-self-start')
                     with ui.row().classes('w-full no-wrap'):
                         id_cliente_input = ui.select([], label='Selecione o cliente', with_input=True).classes('w-2/3 rounded-md').props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"')
                         ui.button('Novo cliente', on_click=lambda: adicionar_cliente.open()).classes('button button-secodary rounded-md h-full')
+            
+        #              ────────Hospedagem─────────────────────   
+                with ui.card().classes("w-full"):
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Hospedagem').classes('text-lg font-medium mb-1 w-2/3 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Endereço').classes('text-sm font-medium mb-1')
+                    with ui.row().classes('w-full no-wrap'):
+                        endereco_hospedagem_input = ui.input(label='Selecione o cliente').classes('w-full rounded-md').props('outlined')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Diária').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                        ui.label('Dias').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        diaria_input = ui.number(label='Diária', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined').classes('w-2/3 rounded-md')
+                        dias_input = ui.number(label='Dias', placeholder='0', min=0, on_change=on_value_change).props('outlined').classes('w-1/3 rounded-md')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                    with ui.row().classes("w-full no-wrap"):    
+                        observacoes_hospedagem_input = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-40 filled input-style="resize: none"')
+        #              ────────Serviços───────────────────── 
 
-#              ─────────Total─────────────────────────
+                with ui.card().classes("w-full"):
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Serviços').classes('text-lg font-medium mb-1 w-2/3 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Descrição').classes('text-sm font-medium mb-1')
+                    with ui.row().classes('w-full no-wrap'):
+                        descricao_servico_input = ui.input(label='Descrição do serviço').classes('w-full rounded-md').props('outlined')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Valor total dos serviços').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        valor_total_servicos_input = ui.number(label='Valor total dos serviços', placeholder='0.00', min=0, format='%.2f', on_change=on_value_change).props('prefix=R$ outlined').classes('w-2/3 rounded-md')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                    with ui.row().classes("w-full no-wrap"):    
+                        observacoes_servico_input = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-40 filled input-style="resize: none"')
+
+        #              ─────────Total─────────────────────────
 
                 with ui.card().classes("w-full"):
                     with ui.row().classes('gap-2 w-full'):
                         with ui.column().classes("w-full"):
                             ui.label('Valor Total').classes('text-sm font-medium mb-1')
-                            valor_total_input = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
+                            valor_total_input = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$ outlined readonly').classes('w-full rounded-md')
 
-                with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                    ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, id_produto_input.value, pais_saida.value, cidade_saida.value, aeroporto_saida.value, data_saida.value, hora_saida.value, pais_destino.value, cidade_destino.value, aeroporto_destino.value,data_chegada.value, hora_chegada.value, valor_passagem.value, qtd_passagens.value, id_companhia_input.value, id_cliente_input.value, observacoes_input.value, dialog)).classes('button button-primary').style('margin-right: 8px;')
-                    ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
-                    ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
-                    ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar orçamento'))
-                    
-        
+        with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
+            ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref,
+                                                                id_produto_input.value,
+                                                                id_cliente_input.value,
+                                                                pais_saida.value,
+                                                                cidade_saida.value,
+                                                                aeroporto_saida.value,
+                                                                data_saida.value,
+                                                                hora_saida.value,
+                                                                pais_destino.value,
+                                                                cidade_destino.value,
+                                                                aeroporto_destino.value,
+                                                                data_chegada.value,
+                                                                hora_chegada.value,
+                                                                valor_passagem.value,
+                                                                qtd_passagens.value,
+                                                                id_companhia_input.value, 
+                                                                observacoes_input.value,
+                                                                pais_saida_volta.value,
+                                                                cidade_saida_volta.value,
+                                                                aeroporto_saida_volta.value,
+                                                                data_saida_volta.value,
+                                                                hora_saida_volta.value,
+                                                                pais_destino_volta.value,
+                                                                cidade_destino_volta.value,
+                                                                aeroporto_destino_volta.value,
+                                                                data_chegada_volta.value,
+                                                                hora_chegada_volta.value,
+                                                                valor_passagem_volta.value,
+                                                                qtd_passagens_volta.value,
+                                                                id_companhia_input_volta.value, 
+                                                                observacoes_input_volta.value,
+                                                                endereco_hospedagem_input.value,
+                                                                diaria_input.value,
+                                                                dias_input.value,
+                                                                observacoes_hospedagem_input.value,
+                                                                descricao_servico_input.value,
+                                                                valor_total_servicos_input.value,
+                                                                observacoes_servico_input.value,
+                                                                valor_total_input.value,
+
+                                                                dialog)).classes('button button-primary').style('margin-right: 8px;')
+            
+            ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
+            ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar orçamento'))
+                
+    
         # Load options for selects
         produtos = db_connection.get_produtos()
         id_produto_input.options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
@@ -420,11 +586,10 @@ def content() -> None:
             edit_inputs['valor_minimo'].set_value(data['valor_minimo'])
             
 
-    with ui.dialog() as edit_dialog, ui.card().classes('w-180').style('padding: 20px'):
+    with ui.dialog() as edit_dialog, ui.card().classes('w-280').style('padding: 20px'):
         ui.label('Editar Orçamento').classes('text-lg font-bold mb-4')
-        with ui.row().classes("w-full"):
-            with ui.column().classes("w-full"):
-
+        with ui.row().classes("w-full no-wrap"):
+            with ui.column().classes("w-1/2 no-wrap"):
                 with ui.card().classes("w-full"):
                     with ui.row().classes('gap-2 w-full'):
                             ui.label('Produto').classes('text-lg font-medium mb-1')
@@ -506,6 +671,7 @@ def content() -> None:
                 
 #              ────────Cliente─────────────────────
 
+            with ui.column().classes("w-1/2 no-wrap"):
                 with ui.card().classes("w-full"):
                     with ui.row().classes('w-full no-wrap'):
                         ui.label('Cliente').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
@@ -514,10 +680,11 @@ def content() -> None:
                         ui.button('Novo cliente', on_click=lambda: adicionar_cliente.open()).classes('button button-secodary rounded-md h-full')
 
                 
-                with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                    ui.button('Confirmar', on_click=lambda: edit_orcamento(grid_ref, edit_inputs['id_produto'].value, edit_inputs['pais_saida'].value, edit_inputs['cidade_saida'].value, edit_inputs['aeroporto_saida'].value, edit_inputs['data_saida'].value, edit_inputs['hora_saida'].value, edit_inputs['pais_destino'].value, edit_inputs['cidade_destino'].value, edit_inputs['aeroporto_destino'].value, edit_inputs['data_chegada'].value, edit_inputs['hora_chegada'].value, edit_inputs['valor_passagem'].value, edit_inputs['qtd_passagens'].value, edit_inputs['id_companhia_input'].value, edit_inputs['id_cliente'].value,edit_inputs['id_voo'].value, edit_inputs['obs'].value, edit_dialog, selected_row)).classes('button button-primary').style('margin-right: 8px;')
-                    ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
-                    ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar orçamento'))
+        with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
+            ui.button('Confirmar', on_click=lambda: edit_orcamento(grid_ref, edit_inputs['id_produto'].value, edit_inputs['pais_saida'].value, edit_inputs['cidade_saida'].value, edit_inputs['aeroporto_saida'].value, edit_inputs['data_saida'].value, edit_inputs['hora_saida'].value, edit_inputs['pais_destino'].value, edit_inputs['cidade_destino'].value, edit_inputs['aeroporto_destino'].value, edit_inputs['data_chegada'].value, edit_inputs['hora_chegada'].value, edit_inputs['valor_passagem'].value, edit_inputs['qtd_passagens'].value, edit_inputs['id_companhia_input'].value, edit_inputs['id_cliente'].value,edit_inputs['id_voo'].value, edit_inputs['obs'].value, edit_dialog, selected_row)).classes('button button-primary').style('margin-right: 8px;')
+            ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
+            ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
+            ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar orçamento'))
         
         # Load options for edit selects
         produtos = db_connection.get_produtos()
@@ -554,13 +721,91 @@ def content() -> None:
         
 
             
-def update_grid(grid_ref, id_produto, pais_saida, cidade_saida, aeroporto_saida, data_saida, hora_saida, pais_destino, cidade_destino, aeroporto_destino, data_chegada, hora_chegada, valor_passagem,qtd_passagens, id_companhia, id_cliente,obs, dialog):
+def update_grid(grid_ref,
+                id_produto,
+                id_cliente,
 
-    dt_hr_chegada = f'{data_chegada}T{hora_chegada}:00' if data_chegada and hora_chegada else None
-    dt_hr_saida = f'{data_saida}T{hora_saida}:00' if data_saida and hora_saida else None
-    valor_total = int(qtd_passagens) * valor_passagem
+                pais_saida_ida,
+                cidade_saida_ida,
+                aeroporto_saida_ida,
+                data_saida_ida,
+                hora_saida_ida,
+                pais_destino_ida,
+                cidade_destino_ida,
+                aeroporto_destino_ida,
+                data_chegada_ida,
+                hora_chegada_ida,
+                valor_passagem_ida,
+                qtd_passagens_ida,
+                id_companhia_ida,
+                obs_ida,
+                pais_saida_volta,
+                cidade_saida_volta,
+                aeroporto_saida_volta,
+                data_saida_volta,
+                hora_saida_volta,
+                pais_destino_volta,
+                cidade_destino_volta,
+                aeroporto_destino_volta,
+                data_chegada_volta,
+                hora_chegada_volta,
+                valor_passagem_volta,
+                qtd_passagens_volta,
+                id_companhia_volta,
+                obs_volta,
 
-    db_connection.add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, id_cliente, valor_total,obs)
+                endereco_hospedagem,
+                diaria,
+                qtd_dias,
+                obs_hospedagem,
+
+                descricao_servico,
+                valor_total_servicos,
+                obs_servicos,
+
+                valor_total,
+                dialog):
+
+    dt_hr_chegada_ida = f'{data_chegada_ida}T{hora_chegada_ida}:00' if data_chegada_ida and hora_chegada_ida else None
+    dt_hr_saida_ida = f'{data_saida_ida}T{hora_saida_ida}:00' if data_saida_ida and hora_saida_ida else None
+
+    dt_hr_chegada_volta = f'{data_chegada_volta}T{hora_chegada_volta}:00' if data_chegada_volta and hora_chegada_volta else None
+    dt_hr_saida_volta = f'{data_saida_volta}T{hora_saida_volta}:00' if data_saida_volta and hora_saida_volta else None
+
+    db_connection.add_orcamento(id_produto,
+                                id_cliente,
+                                pais_saida_ida,
+                                cidade_saida_ida,
+                                aeroporto_saida_ida,
+                                dt_hr_saida_ida,
+                                pais_destino_ida,
+                                cidade_destino_ida,
+                                aeroporto_destino_ida,
+                                dt_hr_chegada_ida,
+                                valor_passagem_ida,
+                                qtd_passagens_ida,
+                                id_companhia_ida,
+                                obs_ida,
+                                pais_saida_volta,
+                                cidade_saida_volta,
+                                aeroporto_saida_volta,
+                                dt_hr_saida_volta,
+                                pais_destino_volta,
+                                cidade_destino_volta,
+                                aeroporto_destino_volta,
+                                dt_hr_chegada_volta,
+                                valor_passagem_volta,
+                                qtd_passagens_volta,
+                                id_companhia_volta,
+                                obs_volta,
+                                endereco_hospedagem,
+                                diaria,
+                                qtd_dias,
+                                obs_hospedagem,
+                                descricao_servico,
+                                valor_total_servicos,
+                                obs_servicos,
+                                valor_total)
     dialog.close()
     
     novos_valores = format_orcamentos_for_grid(db_connection.get_orcamentos())
