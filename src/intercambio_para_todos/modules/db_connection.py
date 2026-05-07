@@ -130,12 +130,35 @@ def get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, json_agg(voo.*) AS voo_lista, voo.id_voo, voo.valor_passagem, voo.qtd_passagens, voo.id_companhia, comp.nome_companhia, c.id_cliente, c.nome FROM {} o LEFT JOIN {} p ON p.id_produto = o.id_produto LEFT JOIN {} voo ON o.id_voo = voo.id_voo LEFT JOIN {} c ON o.id_cliente = c.id_cliente LEFT JOIN {} comp ON voo.id_companhia = comp.id_companhia  GROUP BY o.id_orcamento, p.id_produto, o.id_voo, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.id_cliente, c.nome, voo.id_voo, comp.id_companhia").format(
+        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_cliente, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, \
+                        o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, \
+                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Ida') AS voo_lista_ida ,\
+                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta, \
+                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Ida') AS valor_passagem_ida, \
+                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Ida') AS qtd_passagens_ida, \
+                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Ida') AS obs_ida, \
+                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Volta') AS valor_passagem_volta, \
+                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Volta') AS qtd_passagens_volta, \
+                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Volta') AS obs_volta,  \
+                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_ida WHERE ida_volta = 'Ida' AND id_orcamento = o.id_orcamento), \
+                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_volta WHERE ida_volta = 'Volta' AND id_orcamento = o.id_orcamento), \
+                        s.id_servico, s.descricao, s.obs_servicos AS obs_servico, \
+                        c.nome \
+                        FROM {} o \
+                        LEFT JOIN {} p ON p.id_produto = o.id_produto \
+                        LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
+                        LEFT JOIN {} h ON o.id_hospedagem = h.id_hospedagem \
+                        LEFT JOIN {} s ON o.id_servico = s.id_servico \
+                        LEFT JOIN {} voo ON o.id_orcamento = voo.id_orcamento \
+                        LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia \
+                        GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos").format(
             sql.Identifier("orcamento"),
             sql.Identifier("produto"),
-            sql.Identifier("voo"),
             sql.Identifier("cliente"),
-            sql.Identifier("companhia_aerea")
+            sql.Identifier("hospedagem"),
+            sql.Identifier("servico"),
+            sql.Identifier("voo"),
+            sql.Identifier("servico"),
         )
         cur.execute(query)
         orcamentos = cur.fetchall()
@@ -193,15 +216,68 @@ def add_cliente(nome, sexo, data_nascimento, cpf, telefone, adicionar_cliente, i
     id_input_cliente.value = id_cliente
 
 
-def add_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, id_cliente, valor_total, obs):
+def add_orcamento(id_produto,
+                  id_cliente,
+                  pais_saida_ida,
+                  cidade_saida_ida,
+                  aeroporto_saida_ida,
+                  dt_hr_saida_ida,
+                  pais_destino_ida,
+                  cidade_destino_ida,
+                  aeroporto_destino_ida,
+                  dt_hr_chegada_ida,
+                  valor_passagem_ida,
+                  qtd_passagens_ida,
+                  id_companhia_ida,
+                  obs_ida,
+                  pais_saida_volta,
+                  cidade_saida_volta,
+                  aeroporto_saida_volta,
+                  dt_hr_saida_volta,
+                  pais_destino_volta,
+                  cidade_destino_volta,
+                  aeroporto_destino_volta,
+                  dt_hr_chegada_volta,
+                  valor_passagem_volta,
+                  qtd_passagens_volta,
+                  id_companhia_volta,
+                  obs_volta,
+
+                  endereco_hospedagem,
+                  diaria,
+                  qtd_dias,
+                  obs_hospedagem,
+
+                  descricao_servico,
+                  valor_total_servicos,
+                  obs_servicos,
+
+                  valor_total
+
+                  ):
+    
     conn = db_connection()
     cur = conn.cursor()
-    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_voo", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, obs))
-    id_voo = cur.fetchone()[0]
+
+    
+
+    cur.execute("INSERT INTO hospedagem (endereco, diaria, dias, obs) VALUES (%s, %s, %s, %s) RETURNING id_hospedagem", (endereco_hospedagem, diaria, qtd_dias, obs_hospedagem))
+    id_hospedagem = cur.fetchone()[0]
+
+    cur.execute("INSERT INTO servico (descricao, valor_total_servicos, obs_servicos) VALUES (%s, %s, %s) RETURNING id_servico", (descricao_servico, valor_total_servicos, obs_servicos))
+    id_servico = cur.fetchone()[0]
+
     cur.execute(
-        "INSERT INTO orcamento (id_produto, id_voo, id_cliente, valor_total) VALUES (%s, %s, %s, %s)",
-        (id_produto, id_voo, id_cliente, valor_total)
+        "INSERT INTO orcamento (id_produto, id_cliente, id_hospedagem, id_servico, valor_total) VALUES (%s, %s, %s, %s, %s) RETURNING id_orcamento",
+        (id_produto, id_cliente, id_hospedagem, id_servico, valor_total)
     )
+
+    id_orcamento = cur.fetchone()[0]
+
+    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs, id_orcamento) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (pais_saida_ida, cidade_saida_ida, aeroporto_saida_ida, dt_hr_saida_ida, pais_destino_ida, cidade_destino_ida, aeroporto_destino_ida, dt_hr_chegada_ida, valor_passagem_ida, qtd_passagens_ida, id_companhia_ida, obs_ida, id_orcamento))
+
+    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs, id_orcamento) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (pais_saida_volta, cidade_saida_volta, aeroporto_saida_volta, dt_hr_saida_volta, pais_destino_volta, cidade_destino_volta, aeroporto_destino_volta, dt_hr_chegada_volta, valor_passagem_volta, qtd_passagens_volta, id_companhia_volta, obs_volta, id_orcamento))
+
     conn.commit()
     conn.close()
 
