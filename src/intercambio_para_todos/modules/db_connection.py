@@ -281,21 +281,75 @@ def add_orcamento(id_produto,
     conn.commit()
     conn.close()
 
-def update_orcamento(id_produto, pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, id_cliente, valor_total, id_orcamento, obs):
+def update_orcamento(id_produto,
+                     id_cliente,
+                     id_orcamento,
+
+                     pais_saida_ida,
+                     cidade_saida_ida,
+                     aeroporto_saida_ida,
+                     dt_hr_saida_ida,
+                     pais_destino_ida,
+                     cidade_destino_ida,
+                     aeroporto_destino_ida,
+                     dt_hr_chegada_ida,
+                     valor_passagem_ida,
+                     qtd_passagens_ida,
+                     id_companhia_ida,
+                     obs_ida,
+
+                     pais_saida_volta,
+                     cidade_saida_volta,
+                     aeroporto_saida_volta,
+                     dt_hr_saida_volta,
+                     pais_destino_volta,
+                     cidade_destino_volta,
+                     aeroporto_destino_volta,
+                     dt_hr_chegada_volta,
+                     valor_passagem_volta,
+                     qtd_passagens_volta,
+                     id_companhia_volta,
+                     obs_volta,
+
+                     id_hospedagem,
+                     endereco_hospedagem,
+                     diaria,
+                     qtd_dias,
+                     obs_hospedagem,
+
+                     id_servico,
+                     descricao_servico,
+                     valor_total_servicos,
+                     obs_servicos,
+
+                     valor_total):
     conn = db_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE voo SET pais_saida = %s, cidade_saida = %s, aeroporto_saida = %s, dt_hr_saida = %s, pais_destino = %s, cidade_destino = %s, aeroporto_destino = %s, dt_hr_chegada = %s, valor_passagem = %s, qtd_passagens = %s, id_companhia = %s, obs = %s WHERE id_orcamento = %s AND ida_volta = 'Ida'", (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem, qtd_passagens, id_companhia, obs, id_orcamento))
+
+    cur.execute("UPDATE voo SET pais_saida = %s, cidade_saida = %s, aeroporto_saida = %s, dt_hr_saida = %s, pais_destino = %s, cidade_destino = %s, aeroporto_destino = %s, dt_hr_chegada = %s, valor_passagem = %s, qtd_passagens = %s, id_companhia = %s, obs = %s WHERE id_orcamento = %s AND ida_volta = 'Ida'", (pais_saida_ida, cidade_saida_ida, aeroporto_saida_ida, dt_hr_saida_ida, pais_destino_ida, cidade_destino_ida, aeroporto_destino_ida, dt_hr_chegada_ida, valor_passagem_ida, qtd_passagens_ida, id_companhia_ida, obs_ida, id_orcamento))
+
+    cur.execute("UPDATE voo SET pais_saida = %s, cidade_saida = %s, aeroporto_saida = %s, dt_hr_saida = %s, pais_destino = %s, cidade_destino = %s, aeroporto_destino = %s, dt_hr_chegada = %s, valor_passagem = %s, qtd_passagens = %s, id_companhia = %s, obs = %s WHERE id_orcamento = %s AND ida_volta = 'Volta'", (pais_saida_volta, cidade_saida_volta, aeroporto_saida_volta, dt_hr_saida_volta, pais_destino_volta, cidade_destino_volta, aeroporto_destino_volta, dt_hr_chegada_volta, valor_passagem_volta, qtd_passagens_volta, id_companhia_volta, obs_volta, id_orcamento))
+
+    cur.execute("UPDATE hospedagem SET endereco = %s, diaria = %s, dias = %s, obs = %s WHERE id_hospedagem = %s", (endereco_hospedagem, diaria, qtd_dias, obs_hospedagem, id_hospedagem))
+
+    cur.execute("UPDATE servico SET descricao = %s, valor_total_servicos = %s, obs_servicos = %s WHERE id_servico = %s", (descricao_servico, valor_total_servicos, obs_servicos, id_servico))
+
     cur.execute(
         "UPDATE orcamento SET id_produto = %s, id_cliente = %s, valor_total = %s WHERE id_orcamento = %s",
         (id_produto, id_cliente, valor_total, id_orcamento)
     )
+
+
     conn.commit()
     cur.close()
     conn.close()
 
-def delete_orcamento(id_orcamento):
+def delete_orcamento(id_orcamento, id_hospedagem, id_servico):
     conn = db_connection()
     cur = conn.cursor()
+    cur.execute("DELETE FROM voo WHERE id_orcamento = %s", (id_orcamento,))
+    cur.execute("DELETE FROM hospedagem WHERE id_hospedagem = %s", (id_hospedagem,))
+    cur.execute("DELETE FROM servico WHERE id_servico = %s", (id_servico,))
     cur.execute("DELETE FROM orcamento WHERE id_orcamento = %s", (id_orcamento,))
     conn.commit()
     cur.close()
@@ -342,19 +396,55 @@ def update_venda(data_venda, id_orcamento, quantidade, forma_pgto, valor_final, 
     conn.close()
     print(f"Updated: {id_venda}")
 
-def get_orcamento_vendas():
+def get_orcamentos_vendas():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT * FROM {} \
-                        LEFT JOIN {} USING (id_produto)\
-                        LEFT JOIN {} USING (id_voo)\
-                        LEFT JOIN {} USING (id_companhia)\
-                        LEFT JOIN {} USING (id_cliente)")\
-        .format(sql.Identifier("orcamento"), sql.Identifier("produto"), sql.Identifier("voo"), sql.Identifier("companhia_aerea"), sql.Identifier("cliente"))
+        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, \
+                        o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, \
+                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Ida') AS voo_lista_ida ,\
+                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta, \
+                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Ida') AS valor_passagem_ida, \
+                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Ida') AS qtd_passagens_ida, \
+                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Ida') AS obs_ida, \
+                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Volta') AS valor_passagem_volta, \
+                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Volta') AS qtd_passagens_volta, \
+                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Volta') AS obs_volta,  \
+                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_ida WHERE ida_volta = 'Ida' AND id_orcamento = o.id_orcamento) AS companhia_ida, \
+                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_volta WHERE ida_volta = 'Volta' AND id_orcamento = o.id_orcamento) AS companhia_volta, \
+                        s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, \
+                        c.*,  \
+                        (SELECT voo.pais_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS pais_saida_ida,\
+                        (SELECT voo.cidade_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS cidade_saida_ida, \
+                        (SELECT voo.aeroporto_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_saida_ida, \
+                        (SELECT voo.pais_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS pais_destino_ida, \
+                        (SELECT voo.cidade_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS cidade_destino_ida, \
+                        (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_ida, \
+                        (SELECT voo.pais_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS pais_saida_volta, \
+                        (SELECT voo.cidade_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS cidade_saida_volta, \
+                        (SELECT voo.aeroporto_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_saida_volta, \
+                        (SELECT voo.pais_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS pais_destino_volta, \
+                        (SELECT voo.cidade_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS cidade_destino_volta, \
+                        (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_volta \
+                        FROM {} o \
+                        LEFT JOIN {} p ON p.id_produto = o.id_produto \
+                        LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
+                        LEFT JOIN {} h ON o.id_hospedagem = h.id_hospedagem \
+                        LEFT JOIN {} s ON o.id_servico = s.id_servico \
+                        LEFT JOIN {} voo ON o.id_orcamento = voo.id_orcamento \
+                        LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia \
+                        GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, c.id_cliente").format(
+            sql.Identifier("orcamento"),
+            sql.Identifier("produto"),
+            sql.Identifier("cliente"),
+            sql.Identifier("hospedagem"),
+            sql.Identifier("servico"),
+            sql.Identifier("voo"),
+            sql.Identifier("servico"),
+        )
         cur.execute(query)
-        orcamentos_venda = cur.fetchall()
+        orcamentos = cur.fetchall()
         conn.close()
-        return orcamentos_venda
+        return orcamentos
     else:
         return []
