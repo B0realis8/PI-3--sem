@@ -375,26 +375,41 @@ def get_vendas():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("vendas"))
+        query = sql.SQL("SELECT v.*, c.*, o.* FROM {} v LEFT JOIN orcamento o ON v.id_orcamento = o.id_orcamento LEFT JOIN cliente c ON o.id_cliente = c.id_cliente").format(sql.Identifier("vendas"))
         cur.execute(query)
         vendas = cur.fetchall()
         conn.close()
         return vendas
     else:
         return []
+    
+def add_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO vendas (data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao))
+    conn.commit()
+    conn.close()
 
-def update_venda(data_venda, id_orcamento, quantidade, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, lucro_total, id_venda):
+def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda):
 
     conn = db_connection()
     cur = conn.cursor()
     cur.execute(
-        "UPDATE vendas SET data_venda = %s, id_orcamento = %s, quantidade = %s, forma_pgto = %s, valor_final = %s, entrada = %s, n_parcelas = %s, valor_parcelas = %s, comissao = %s, lucro_total = %s WHERE id_venda = %s",
-        (data_venda, id_orcamento, quantidade, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, lucro_total, id_venda)
+        "UPDATE vendas SET data_venda = %s, id_orcamento = %s, forma_pgto = %s, valor_final = %s, entrada = %s, n_parcelas = %s, valor_parcelas = %s, comissao = %s WHERE id_venda = %s",
+        (data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda)
     )
     conn.commit()
     cur.close()
     conn.close()
     print(f"Updated: {id_venda}")
+
+def delete_venda(id_venda):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM vendas WHERE id_venda = %s", (id_venda,))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def get_orcamentos_vendas():
     conn = db_connection()
@@ -425,7 +440,8 @@ def get_orcamentos_vendas():
                         (SELECT voo.aeroporto_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_saida_volta, \
                         (SELECT voo.pais_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS pais_destino_volta, \
                         (SELECT voo.cidade_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS cidade_destino_volta, \
-                        (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_volta \
+                        (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_volta, \
+                        v.id_venda, v.data_venda, v.forma_pgto, v.valor_final, v.entrada, v.n_parcelas, v.valor_parcelas, v.comissao \
                         FROM {} o \
                         LEFT JOIN {} p ON p.id_produto = o.id_produto \
                         LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
@@ -433,7 +449,8 @@ def get_orcamentos_vendas():
                         LEFT JOIN {} s ON o.id_servico = s.id_servico \
                         LEFT JOIN {} voo ON o.id_orcamento = voo.id_orcamento \
                         LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia \
-                        GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, c.id_cliente").format(
+                        LEFT JOIN vendas v ON o.id_orcamento = v.id_orcamento \
+                        GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, c.id_cliente, v.id_venda").format(
             sql.Identifier("orcamento"),
             sql.Identifier("produto"),
             sql.Identifier("cliente"),
