@@ -45,7 +45,11 @@ def content() -> None:
             'autoSizeStrategy': {'type': 'fitGridWidth'},
             ':onGridSizeChanged': '(params) => params.api.sizeColumnsToFit()',
             'rowSelection': 'single',
-        }, html_columns=[4]).classes('w-full flex-grow').on("cellValueChanged", on_cell_change)
+            'defaultColDef': {'cellStyle': {'display': 'flex', 'align-items': 'center', 'white-space': 'pre-wrap' }},
+            'pagination': True,
+            'paginationPageSize': 10,    # Rows per page
+            'paginationPageSizeSelector': [10, 20, 50, 100], # User can pick page size
+        }, html_columns=[],theme='balham').classes('w-full flex-grow')
         grid_ref['grid'] = grid
 
         search.on('update:model-value', lambda e: grid.run_grid_method(
