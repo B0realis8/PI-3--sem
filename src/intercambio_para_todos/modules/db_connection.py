@@ -403,6 +403,18 @@ def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_p
     conn.close()
     print(f"Updated: {id_venda}")
 
+def update_status_venda(status_venda, id_venda):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE vendas SET status_venda = %s WHERE id_venda = %s",
+        (status_venda, id_venda)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    print(f"Updated status_venda: {id_venda} to {status_venda}")
+
 def delete_venda(id_venda):
     conn = db_connection()
     cur = conn.cursor()

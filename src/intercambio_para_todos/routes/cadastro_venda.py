@@ -10,6 +10,7 @@ import datetime
 def content() -> None:
 
     ui.add_head_html('<style>.ag-row { cursor: pointer; }</style>')
+    ui.add_head_html('<style>.ag-theme-balham { overflow: visible !important; }</style>')
 
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
@@ -33,7 +34,9 @@ def content() -> None:
         {'field': 'n_parcelas', 'headerName': 'Número de Parcelas', 'sortable': True, 'editable': True},
         {'field': 'valor_parcelas', 'headerName': 'Valor das Parcelas', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'comissao', 'headerName': 'Comissão', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
-        {'field': 'valor_final', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'}
+        {'field': 'valor_final', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
+        {'field': 'status_venda','headerName': 'Status','editable': True, 'cellEditor': 'agSelectCellEditor',  'cellEditorParams': {'values': ['Pendente', 'Concluida', 'Cancelada'],},}
+
     ]
 
     grid_ref = {}
@@ -48,8 +51,7 @@ def content() -> None:
         grid = ui.aggrid({
             'columnDefs': column_defs,
             'rowData': db_connection.get_vendas(),
-            'rowSelection': {'mode': 'multiRow'},
-            'defaultColDef': {'sortable': True},
+            'defaultColDef': {'sortable': True,'singleClickEdit': True},
             'autoSizeStrategy': {'type': 'fitGridWidth'},
             ':onGridSizeChanged': '(params) => params.api.sizeColumnsToFit()',
             'rowSelection': 'single',
@@ -763,6 +765,15 @@ def content() -> None:
     id_orcamento_input_edit.update()
                     
     async def on_row_selected(event):
+        # Exclude status_venda column from triggering row selection
+
+        #notify(f"Event args: {event.args.get('colId')}", type='info')
+        
+        column_field = {event.args.get('colId')}
+        #notify(f"Column field: {column_field}", type='info')
+
+        if column_field == {'status_venda'}:
+            return
 
         selected_rows = await grid.get_selected_rows()
         selected_row['data'] = selected_rows[0] if selected_rows else None
@@ -780,10 +791,10 @@ def content() -> None:
                 data = row
                 
                 break
-        notify(str(data), type='info')
+        #notify(str(data), type='info')
         if data:
 
-            notify(f"Orcamento selecionado: {data['id_orcamento']}, {data['pais_saida_ida']}, {data['cidade_saida_ida']}, {data['aeroporto_saida_ida']}", type='success')
+           # notify(f"Orcamento selecionado: {data['id_orcamento']}, {data['pais_saida_ida']}, {data['cidade_saida_ida']}, {data['aeroporto_saida_ida']}", type='success')
 
             edit_venda_dialog.open()
 
@@ -848,6 +859,8 @@ def content() -> None:
             comissao_input_edit.set_value(data['comissao'])
 
     grid.on('cellClicked', on_row_selected)
+    grid.on('cellValueChanged', lambda event: on_cell_edit(grid_ref, selected_row))
+    #grid.on('cellValueChanged', lambda event: notify("Valor da célula editado", type='success'))
 
 # --------------- Funções ---------------
 
@@ -897,3 +910,27 @@ def delete_selected(grid_ref, selected_row, dialog):
     grid = grid_ref.get('grid')
     grid.options['rowData'] = novos_valores
     grid.update()
+
+async def on_cell_edit(grid_ref, selected_row):
+    
+    grid = grid_ref.get('grid')
+    
+    selected_rows = await grid.get_selected_rows()
+    selected_row['data'] = selected_rows[0] if selected_rows else None
+
+    if selected_rows:
+        id_venda = selected_rows[0]['id_venda']
+        status = selected_rows[0]['status_venda']
+        ui.notify('Venda selecionada:' + str(id_venda) + ' Status: ' + status, type='warning')
+    #ui.notify('Venda selecionada:' + str(), type='warning')
+
+    db_connection.update_status_venda(status, id_venda)
+
+
+    novos_valores = db_connection.get_vendas()
+
+    grid.options['rowData'] = novos_valores
+    grid.update()
+    
+
+
