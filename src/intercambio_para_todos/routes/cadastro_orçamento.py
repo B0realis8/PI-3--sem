@@ -139,7 +139,7 @@ def content() -> None:
 
         grid = ui.aggrid({
             'columnDefs': column_defs,
-            'rowData': format_orcamentos_for_grid(db_connection.get_orcamentos()),
+            'rowData': format_orcamentos_for_grid(db_connection.teste_get_orcamentos()),
             'defaultColDef': {'sortable': True},
             'autoSizeStrategy': {'type': 'fitCellContents'},
             'suppressSizeToFit': True,
@@ -170,7 +170,6 @@ def content() -> None:
         for row in data:
             if row['id_produto'] == selected_id:
                 data = row
-                notify(f"Produto selecionado: {data['nome_produto']}", type='success')
                 break
         if data:
             # Update inputs
@@ -185,11 +184,9 @@ def content() -> None:
         selected_id = event.value
         # Fetch new data
         data = db_connection.get_clientes()
-        notify(str(data), type='info')
         for row in data:
             if row['id_cliente'] == selected_id:
                 data = row
-                notify(f"Cliente selecionado: {data['nome_cliente']}", type='success')
                 break
         if data:
             # Update inputs
@@ -557,7 +554,6 @@ def content() -> None:
                 clientes = db_connection.get_clientes()
                 companhias = db_connection.get_companhias()
 
-                notify(str(clientes), type='info')
                 voos = db_connection.get_voos_w_id(selected_rows[0]['id_orcamento'])
                 data = None
                 for row in voos:
@@ -741,7 +737,7 @@ def content() -> None:
                     with ui.row().classes('w-full no-wrap'):
                         ui.label('Voo').classes('text-lg font-medium mb-1')
                         ui.icon('flight', color="#DFDFDF", size="md").classes('ml-auto justify-self-end h-full')
-                        edit_inputs['id_voo'] = ui.input(label='ID do produto', placeholder='ID').classes('hidden').props('readonly')
+                        edit_inputs['id_voo'] = ui.input(label='ID do voo', placeholder='ID').classes('hidden').props('readonly')
 
                 #---------------------------------------Ida---------------------------------------#
                         
@@ -1086,7 +1082,7 @@ def update_grid(grid_ref,
                                 valor_total)
     dialog.close()
     
-    novos_valores = format_orcamentos_for_grid(db_connection.get_orcamentos())
+    novos_valores = format_orcamentos_for_grid(db_connection.teste_get_orcamentos())
     
     # Update AG Grid Data
     grid = grid_ref.get('grid')
@@ -1202,7 +1198,7 @@ def edit_orcamento(grid_ref,
                                     )
     dialog.close()
     
-    novos_valores = format_orcamentos_for_grid(db_connection.get_orcamentos())
+    novos_valores = format_orcamentos_for_grid(db_connection.teste_get_orcamentos())
     grid = grid_ref.get('grid')
     grid.options['rowData'] = novos_valores
     grid.update()
@@ -1227,7 +1223,7 @@ async def delete_selected(grid_ref, selected_row, edit_dialog):
     if result == True:
 
         db_connection.delete_orcamento(id_orcamento,id_hospedagem,id_servico)
-        data = format_orcamentos_for_grid(db_connection.get_orcamentos())
+        data = format_orcamentos_for_grid(db_connection.teste_get_orcamentos())
         grid.options['rowData'] = data
         grid.update()
         ui.notify('Orçamento excluído com sucesso', type='info')
