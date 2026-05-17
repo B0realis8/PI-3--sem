@@ -7,6 +7,7 @@ from psycopg2 import sql
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 import asyncio
+from sqlalchemy import create_engine, text
 
 load_dotenv()
 
@@ -347,10 +348,12 @@ def update_orcamento(id_produto,
 def delete_orcamento(id_orcamento, id_hospedagem, id_servico):
     conn = db_connection()
     cur = conn.cursor()
+    
     cur.execute("DELETE FROM voo WHERE id_orcamento = %s", (id_orcamento,))
+    cur.execute("DELETE FROM orcamento WHERE id_orcamento = %s", (id_orcamento,))
     cur.execute("DELETE FROM hospedagem WHERE id_hospedagem = %s", (id_hospedagem,))
     cur.execute("DELETE FROM servico WHERE id_servico = %s", (id_servico,))
-    cur.execute("DELETE FROM orcamento WHERE id_orcamento = %s", (id_orcamento,))
+    
     conn.commit()
     cur.close()
     conn.close()
@@ -400,6 +403,9 @@ def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_p
     )
     conn.commit()
     cur.close()
+
+    update_dw(conn)
+
     conn.close()
     print(f"Updated: {id_venda}")
 
@@ -423,37 +429,69 @@ def delete_venda(id_venda):
     cur.close()
     conn.close()
 
-def get_orcamentos_vendas():
+# def get_orcamentos_vendas():
+#     conn = db_connection()
+#     if conn:
+#         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+#         query = sql.SQL("SELECT o.id_orcamento, p.id_produto, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, \
+#                         o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, \
+#                         json_agg(voo.*) FILTER (WHERE ida_volta = 'Ida') AS voo_lista_ida ,\
+#                         json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta, \
+#                         sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Ida') AS valor_passagem_ida, \
+#                         sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Ida') AS qtd_passagens_ida, \
+#                         string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Ida') AS obs_ida, \
+#                         sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Volta') AS valor_passagem_volta, \
+#                         sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Volta') AS qtd_passagens_volta, \
+#                         string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Volta') AS obs_volta,  \
+#                         (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_ida WHERE ida_volta = 'Ida' AND id_orcamento = o.id_orcamento) AS companhia_ida, \
+#                         (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_volta WHERE ida_volta = 'Volta' AND id_orcamento = o.id_orcamento) AS companhia_volta, \
+#                         s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, \
+#                         c.*,  \
+#                         (SELECT voo.pais_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS pais_saida_ida,\
+#                         (SELECT voo.cidade_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS cidade_saida_ida, \
+#                         (SELECT voo.aeroporto_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_saida_ida, \
+#                         (SELECT voo.pais_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS pais_destino_ida, \
+#                         (SELECT voo.cidade_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS cidade_destino_ida, \
+#                         (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_ida, \
+#                         (SELECT voo.pais_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS pais_saida_volta, \
+#                         (SELECT voo.cidade_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS cidade_saida_volta, \
+#                         (SELECT voo.aeroporto_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_saida_volta, \
+#                         (SELECT voo.pais_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS pais_destino_volta, \
+#                         (SELECT voo.cidade_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS cidade_destino_volta, \
+#                         (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_volta, \
+#                         v.id_venda, v.data_venda, v.forma_pgto, v.valor_final, v.entrada, v.n_parcelas, v.valor_parcelas, v.comissao \
+#                         FROM {} o \
+#                         LEFT JOIN {} p ON p.id_produto = o.id_produto \
+#                         LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
+#                         LEFT JOIN {} h ON o.id_hospedagem = h.id_hospedagem \
+#                         LEFT JOIN {} s ON o.id_servico = s.id_servico \
+#                         LEFT JOIN {} voo ON o.id_orcamento = voo.id_orcamento \
+#                         LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia \
+#                         LEFT JOIN vendas v ON o.id_orcamento = v.id_orcamento \
+#                         GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, c.id_cliente, v.id_venda").format(
+#             sql.Identifier("orcamento"),
+#             sql.Identifier("produto"),
+#             sql.Identifier("cliente"),
+#             sql.Identifier("hospedagem"),
+#             sql.Identifier("servico"),
+#             sql.Identifier("voo"),
+#             sql.Identifier("servico"),
+#         )
+#         cur.execute(query)
+#         orcamentos = cur.fetchall()
+#         conn.close()
+#         return orcamentos
+#     else:
+#         return []
+    
+def teste_get_orcamentos():
+        
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, \
-                        o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, \
+        query = sql.SQL("SELECT o.*, p.*, c.*, h.*, s.*, \
                         json_agg(voo.*) FILTER (WHERE ida_volta = 'Ida') AS voo_lista_ida ,\
-                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta, \
-                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Ida') AS valor_passagem_ida, \
-                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Ida') AS qtd_passagens_ida, \
-                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Ida') AS obs_ida, \
-                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Volta') AS valor_passagem_volta, \
-                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Volta') AS qtd_passagens_volta, \
-                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Volta') AS obs_volta,  \
-                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_ida WHERE ida_volta = 'Ida' AND id_orcamento = o.id_orcamento) AS companhia_ida, \
-                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_volta WHERE ida_volta = 'Volta' AND id_orcamento = o.id_orcamento) AS companhia_volta, \
-                        s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, \
-                        c.*,  \
-                        (SELECT voo.pais_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS pais_saida_ida,\
-                        (SELECT voo.cidade_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS cidade_saida_ida, \
-                        (SELECT voo.aeroporto_saida FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_saida_ida, \
-                        (SELECT voo.pais_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS pais_destino_ida, \
-                        (SELECT voo.cidade_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS cidade_destino_ida, \
-                        (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Ida' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_ida, \
-                        (SELECT voo.pais_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS pais_saida_volta, \
-                        (SELECT voo.cidade_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS cidade_saida_volta, \
-                        (SELECT voo.aeroporto_saida FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_saida_volta, \
-                        (SELECT voo.pais_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS pais_destino_volta, \
-                        (SELECT voo.cidade_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS cidade_destino_volta, \
-                        (SELECT voo.aeroporto_destino FROM voo WHERE ida_volta = 'Volta' AND voo.id_orcamento = o.id_orcamento) AS aeroporto_destino_volta, \
-                        v.id_venda, v.data_venda, v.forma_pgto, v.valor_final, v.entrada, v.n_parcelas, v.valor_parcelas, v.comissao \
+                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta \
                         FROM {} o \
                         LEFT JOIN {} p ON p.id_produto = o.id_produto \
                         LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
@@ -474,6 +512,125 @@ def get_orcamentos_vendas():
         cur.execute(query)
         orcamentos = cur.fetchall()
         conn.close()
-        return orcamentos
+        data = pd.DataFrame(orcamentos)
+        #print(data['voo_lista_ida'][0][0]['id_voo'])
+        columns_ida = pd.json_normalize(data['voo_lista_ida'].explode()).add_suffix('_ida')
+        columns_volta = pd.json_normalize(data['voo_lista_volta'].explode()).add_suffix('_volta')
+        data = data.join(columns_ida).join(columns_volta)
+        print(data.head())
+        #data.to_csv('orcamentos_completo.csv', index=False)
+        print(data.to_dict(orient='records'))
+        print(orcamentos)
+        return data.to_dict("records")
     else:
         return []
+    
+#------------------------------------------------------------------------------DW
+
+def dw_connection():
+
+    dw_uri = os.getenv("DW_RUI")
+
+    connection = urlparse(dw_uri)
+
+    connection_params = {
+        'dbname': connection.path[1:],
+        'user': connection.username,
+        'password': connection.password,
+        'host': connection.hostname,
+        'port': connection.port
+    }
+
+    try:
+        conn = pg.connect(**connection_params)
+        print("Conexão bem-sucedida!")
+        return conn
+    except Exception as e:
+        print(f"Erro ao conectar ao data warehouse: {e}")
+        return None
+    
+def update_dw(conn=None):
+
+    engine = create_engine(os.getenv("DW_RUI"))
+
+    if not conn:
+        conn = db_connection()
+
+    if conn:
+
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+
+        cur.execute("SELECT id_cliente, sexo, data_nascimento FROM cliente")
+        clientes = cur.fetchall()
+        clientes_df = pd.DataFrame(clientes)
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE cliente RESTART IDENTITY CASCADE;"))
+            conn.commit()
+        clientes_df.to_sql('cliente', engine, if_exists='append', index=False)
+
+        cur.execute("SELECT id_produto, nome_produto, tipo, valor_minimo, pais, cidade FROM produto")
+        produtos = cur.fetchall()
+        produtos_df = pd.DataFrame(produtos)
+        print(produtos_df)
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE produto RESTART IDENTITY CASCADE;"))
+            conn.commit()
+        produtos_df.to_sql('produto', engine, if_exists='append', index=False)
+
+        
+
+        cur.execute("SELECT id_servico, valor_total_servicos FROM servico")
+        servicos = cur.fetchall()
+        servicos_df = pd.DataFrame(servicos)
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE servicos RESTART IDENTITY CASCADE;"))
+            conn.commit()
+        servicos_df.to_sql('servicos', engine, if_exists='append', index=False)
+
+        cur.execute("SELECT id_hospedagem, diaria, dias FROM hospedagem")
+        hospedagem = cur.fetchall()
+        hospedagem_df = pd.DataFrame(hospedagem)
+        hospedagem_df['valor_total_hospedagem'] = hospedagem_df['diaria'] * hospedagem_df['dias']
+        hospedagem_df.drop(columns=['diaria', 'dias'], inplace=True)
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE hospedagem RESTART IDENTITY CASCADE;"))
+            conn.commit()
+        hospedagem_df.to_sql('hospedagem', engine, if_exists='append', index=False)
+
+        cur.execute("SELECT v.id_venda, data_venda, o.id_produto, c.id_cliente, o.id_orcamento, o.id_servico, o.id_hospedagem, v.comissao, v.valor_final FROM" \
+        " vendas v LEFT JOIN orcamento o ON v.id_orcamento = o.id_orcamento" \
+        " LEFT JOIN cliente c ON o.id_cliente = c.id_cliente")
+        vendas = cur.fetchall()
+        vendas_df = pd.DataFrame(vendas)
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE vendas RESTART IDENTITY CASCADE;"))
+            conn.commit()
+        vendas_df.to_sql('vendas', engine, if_exists='append', index=False)
+
+        cur.execute("SELECT v.id_voo, v.valor_passagem, v.qtd_passagens, comp.id_companhia, comp.nome_companhia, v.id_orcamento FROM voo v LEFT JOIN companhia_aerea comp ON comp.id_companhia = v.id_companhia")
+        voo = cur.fetchall()
+        print(voo)
+        voo_df = pd.DataFrame(voo)
+        print(voo_df)
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE voo RESTART IDENTITY CASCADE;"))
+            conn.commit()
+        voo_df.to_sql('voo', engine, if_exists='append', index=False)
+        
+    else:
+        print("Erro ao conectar ao banco de dados")
+
+    conn.close()
+    return
+
+
+update_dw()
+
+
+
+
+
+
+
+
+
