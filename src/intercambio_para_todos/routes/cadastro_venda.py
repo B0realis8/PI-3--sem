@@ -11,6 +11,13 @@ def content() -> None:
 
     ui.add_head_html('<style>.ag-row { cursor: pointer; }</style>')
     ui.add_head_html('<style>.ag-theme-balham { overflow: visible !important; }</style>')
+    ui.add_head_html('''
+                        <style>
+                        .cell-fail { background-color: #ef4444; font-weight: bold; color: white; }
+                        .cell-pass { background-color: #4caf50; font-weight: bold; color: white; }
+                        .cell-pending { background-color: #f59e0b; font-weight: bold; color: white; }
+                        </style>
+                        ''')
 
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
@@ -25,7 +32,7 @@ def content() -> None:
 
     column_defs = [
         {'field': 'id_venda', 'headerName': 'Venda #', 'sortable': True, 'editable': False},
-        {'field': 'data_venda', 'headerName': 'Data da Venda', 'sortable': True, 'editable': True},
+        {'field': 'data_venda', 'headerName': 'Data da Venda', 'sortable': True, 'editable': True,'filter': 'agDateColumnFilter', 'valueFormatter': 'value ? value.split("-").reverse().join("/") : "N/A"'},
         {'field': 'id_orcamento', 'headerName': 'Orcamento #', 'sortable': True, 'editable': True},
         {'field': 'nome', 'headerName': 'Cliente', 'sortable': True, 'editable': True},
         {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
@@ -35,7 +42,11 @@ def content() -> None:
         {'field': 'valor_parcelas', 'headerName': 'Valor das Parcelas', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'comissao', 'headerName': 'Comissão', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'valor_final', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
-        {'field': 'status_venda','headerName': 'Status','editable': True, 'cellEditor': 'agSelectCellEditor',  'cellEditorParams': {'values': ['Pendente', 'Concluida', 'Cancelada'],},}
+        {'field': 'status_venda','headerName': 'Status','editable': True, 'cellEditor': 'agSelectCellEditor',  'cellEditorParams': {'values': ['Pendente', 'Concluída', 'Cancelada']},'singleClickEdit': True,'cellClassRules': {
+            'cell-fail': 'x === "Cancelada"',
+            'cell-pass': 'x === "Concluída"',
+            'cell-pending': 'x === "Pendente"',
+        }},
 
     ]
 
@@ -912,7 +923,7 @@ def delete_selected(grid_ref, selected_row, dialog):
     grid.update()
 
 async def on_cell_edit(grid_ref, selected_row):
-    
+
     grid = grid_ref.get('grid')
     
     selected_rows = await grid.get_selected_rows()
