@@ -1,3 +1,23 @@
+
+DROP TABLE IF EXISTS paises CASCADE;
+CREATE TABLE paises (
+
+id INT PRIMARY KEY,
+pais VARCHAR,
+pais_en VARCHAR
+
+);
+
+DROP TABLE IF EXISTS cidades CASCADE;
+CREATE TABLE cidades (
+
+pais VARCHAR,
+cidade VARCHAR,
+id INT PRIMARY KEY,
+id_pais INT REFERENCES paises(id)
+
+)
+
 DROP TABLE IF EXISTS cliente CASCADE;
 CREATE TABLE cliente(
 
@@ -20,7 +40,6 @@ pais VARCHAR(50),
 cidade VARCHAR(50)
 
 );
-
 
 
 DROP TABLE IF EXISTS servicos CASCADE;
