@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 import os
+import sys
+from pathlib import Path
 from nicegui.ui import notify
 import pandas as pd
 import psycopg2 as pg
@@ -9,7 +12,13 @@ from urllib.parse import urlparse
 import asyncio
 from sqlalchemy import create_engine, text
 
-load_dotenv()
+# Force UTF-8 output on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+# Load .env from this package root so DW_RUI and DB_URI are available
+env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(env_path)
 
 def db_connection():
 
@@ -26,7 +35,8 @@ def db_connection():
     }
 
     try:
-        conn = pg.connect(**connection_params)
+        conn = pg.connect(**connection_params, options="-c client_encoding=UTF8")
+        conn.set_client_encoding('UTF8')
         print("Conexão bem-sucedida!")
         return conn
     except Exception as e:
@@ -392,6 +402,7 @@ def add_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parc
     cur.execute("INSERT INTO vendas (data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao))
     conn.commit()
     conn.close()
+    update_dw()
 
 def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda):
 
@@ -404,7 +415,7 @@ def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_p
     conn.commit()
     cur.close()
 
-    update_dw(conn)
+    update_dw()
 
     conn.close()
     print(f"Updated: {id_venda}")
@@ -428,6 +439,7 @@ def delete_venda(id_venda):
     conn.commit()
     cur.close()
     conn.close()
+    update_dw()
 
 # def get_orcamentos_vendas():
 #     conn = db_connection()
@@ -489,16 +501,15 @@ def teste_get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.*, p.*, c.*, h.*, s.*, \
-                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Ida') AS voo_lista_ida ,\
-                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta \
+        query = sql.SQL("SELECT o.*, p.*, c.*, h.*, s.*,v.*, \
+                        json_agg(voo_lista.*) FILTER (WHERE voo_lista.ida_volta = 'Ida') AS voo_lista_ida ,\
+                        json_agg(voo_lista.*) FILTER (WHERE voo_lista.ida_volta = 'Volta') AS voo_lista_volta \
                         FROM {} o \
+                        LEFT JOIN (SELECT voo.*, comp.* FROM voo LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia) AS voo_lista ON voo_lista.id_orcamento = o.id_orcamento\
                         LEFT JOIN {} p ON p.id_produto = o.id_produto \
                         LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
                         LEFT JOIN {} h ON o.id_hospedagem = h.id_hospedagem \
                         LEFT JOIN {} s ON o.id_servico = s.id_servico \
-                        LEFT JOIN {} voo ON o.id_orcamento = voo.id_orcamento \
-                        LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia \
                         LEFT JOIN vendas v ON o.id_orcamento = v.id_orcamento \
                         GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, c.id_cliente, v.id_venda").format(
             sql.Identifier("orcamento"),
@@ -542,7 +553,8 @@ def dw_connection():
     }
 
     try:
-        conn = pg.connect(**connection_params)
+        conn = pg.connect(**connection_params, options="-c client_encoding=UTF8")
+        conn.set_client_encoding('UTF8')
         print("Conexão bem-sucedida!")
         return conn
     except Exception as e:
@@ -555,6 +567,7 @@ def update_dw(conn=None):
 
     if not conn:
         conn = db_connection()
+        conn.set_client_encoding('UTF8')
 
     if conn:
 
@@ -571,7 +584,6 @@ def update_dw(conn=None):
         cur.execute("SELECT id_produto, nome_produto, tipo, valor_minimo, pais, cidade FROM produto")
         produtos = cur.fetchall()
         produtos_df = pd.DataFrame(produtos)
-        print(produtos_df)
         with engine.connect() as conn:
             conn.execute(text("TRUNCATE TABLE produto RESTART IDENTITY CASCADE;"))
             conn.commit()
@@ -590,6 +602,7 @@ def update_dw(conn=None):
         cur.execute("SELECT id_hospedagem, diaria, dias FROM hospedagem")
         hospedagem = cur.fetchall()
         hospedagem_df = pd.DataFrame(hospedagem)
+
         hospedagem_df['valor_total_hospedagem'] = hospedagem_df['diaria'] * hospedagem_df['dias']
         hospedagem_df.drop(columns=['diaria', 'dias'], inplace=True)
         with engine.connect() as conn:
@@ -597,34 +610,38 @@ def update_dw(conn=None):
             conn.commit()
         hospedagem_df.to_sql('hospedagem', engine, if_exists='append', index=False)
 
-        cur.execute("SELECT v.id_venda, data_venda, o.id_produto, c.id_cliente, o.id_orcamento, o.id_servico, o.id_hospedagem, v.comissao, v.valor_final FROM" \
+        cur.execute("SELECT id_cliente, sexo, data_nascimento, cidade, estado FROM cliente")
+        cliente = cur.fetchall()
+        cliente_df = pd.DataFrame(cliente)
+
+        with engine.connect() as conn:
+            conn.execute(text("TRUNCATE TABLE cliente RESTART IDENTITY CASCADE;"))
+            conn.commit()
+        cliente_df.to_sql('cliente', engine, if_exists='append', index=False)
+
+        cur.execute("SELECT v.id_venda, v.data_venda, o.id_produto, c.id_cliente, o.id_orcamento, o.id_servico, o.id_hospedagem, v.comissao, v.valor_final, v.status_venda FROM" \
         " vendas v LEFT JOIN orcamento o ON v.id_orcamento = o.id_orcamento" \
         " LEFT JOIN cliente c ON o.id_cliente = c.id_cliente")
         vendas = cur.fetchall()
         vendas_df = pd.DataFrame(vendas)
-        with engine.connect() as conn:
-            conn.execute(text("TRUNCATE TABLE vendas RESTART IDENTITY CASCADE;"))
-            conn.commit()
-        vendas_df.to_sql('vendas', engine, if_exists='append', index=False)
 
         cur.execute("SELECT v.id_voo, v.valor_passagem, v.qtd_passagens, comp.id_companhia, comp.nome_companhia, v.id_orcamento FROM voo v LEFT JOIN companhia_aerea comp ON comp.id_companhia = v.id_companhia")
         voo = cur.fetchall()
-        print(voo)
         voo_df = pd.DataFrame(voo)
-        print(voo_df)
+
         with engine.connect() as conn:
             conn.execute(text("TRUNCATE TABLE voo RESTART IDENTITY CASCADE;"))
+            conn.execute(text("TRUNCATE TABLE vendas RESTART IDENTITY CASCADE;"))
             conn.commit()
+        vendas_df.to_sql('vendas', engine, if_exists='append', index=False)
         voo_df.to_sql('voo', engine, if_exists='append', index=False)
-        
+               
     else:
         print("Erro ao conectar ao banco de dados")
 
     conn.close()
     return
 
-
-update_dw()
 
 
 
