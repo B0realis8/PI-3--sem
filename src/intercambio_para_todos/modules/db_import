@@ -1,0 +1,52 @@
+
+import pandas as pd
+from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+def import_paises_cidades():
+
+    engine = create_engine(os.getenv("DB_URI"))
+    dw_engine = create_engine(os.getenv("DW_RUI"))
+    pais_df=pd.read_csv('./databases/paises.csv', encoding='utf-8')
+    with engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE paises RESTART IDENTITY CASCADE;"))
+        conn.commit()
+    pais_df.to_sql('paises', engine, if_exists='append', index=False)
+
+    with dw_engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE paises RESTART IDENTITY CASCADE;"))
+        conn.commit()
+    pais_df.to_sql('paises', dw_engine, if_exists='append', index=False)
+    
+
+    cidades_df=pd.read_csv('./databases/worldcities.csv', encoding='utf-8')
+    print(cidades_df.head())
+    cidades_df.drop(columns=['lat', 'city_ascii', 'lng', 'iso2', 'iso3', 'admin_name', 'capital', 'population'], inplace=True)
+    cidades_df.rename(columns={'country': 'pais', 'city': 'cidade'}, inplace=True)
+    cidades_df.replace('Korea, South', 'South Korea', inplace=True)
+    cidades_df.replace('Korea, North', 'North Korea', inplace=True)
+    with engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE cidades RESTART IDENTITY CASCADE;"))
+        conn.commit()
+    cidades_df.to_sql('cidades', engine, if_exists='append', index=False)
+
+    with dw_engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE cidades RESTART IDENTITY CASCADE;"))
+        conn.commit()
+    cidades_df.to_sql('cidades', dw_engine, if_exists='append', index=False)
+
+    with engine.connect() as conn:
+
+        stmt = text("UPDATE cidades SET id_pais = p.id FROM paises p WHERE cidades.pais = p.pais_en")
+        conn.execute(stmt)
+
+    with dw_engine.connect() as conn:
+
+        stmt = text("UPDATE cidades SET id_pais = p.id FROM paises p WHERE cidades.pais = p.pais_en")
+        conn.execute(stmt)
+    
+
+import_paises_cidades()
