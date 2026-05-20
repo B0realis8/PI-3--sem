@@ -99,13 +99,13 @@ def content() -> None:
         {'field': 'cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
 
         {'field': 'voo_lista_ida', 'headerName': 'Voo (Ida)', 'sortable': True, 'editable': True, 'wrapText': True, 'autoHeight': True, 'width': 600},
-        {'field': 'companhia_ida', 'headerName': 'Companhia Aérea (Ida)', 'sortable': True, 'editable': True, 'width': 200},
+        {'field': 'nome_companhia_ida', 'headerName': 'Companhia Aérea (Ida)', 'sortable': True, 'editable': True, 'width': 200},
         {'field': 'valor_passagem_ida', 'headerName': 'Valor Passagem (Ida)', 'sortable': True, 'editable': True, 'width': 200, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'qtd_passagens_ida', 'headerName': 'Qtd. Passagens (Ida)', 'sortable': True, 'editable': True, 'width': 100},
 
 
         {'field': 'voo_lista_volta', 'headerName': 'Voo (Volta)', 'sortable': True, 'editable': True, 'wrapText': True, 'autoHeight': True, 'width': 600},
-        {'field': 'companhia_volta', 'headerName': 'Companhia Aérea (Volta)', 'sortable': True, 'editable': True, 'width': 200},
+        {'field': 'nome_companhia_volta', 'headerName': 'Companhia Aérea (Volta)', 'sortable': True, 'editable': True, 'width': 200},
         {'field': 'valor_passagem_volta', 'headerName': 'Valor Passagem (Volta)', 'sortable': True, 'editable': True, 'width': 200, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'qtd_passagens_volta', 'headerName': 'Qtd. Passagens (Volta)', 'sortable': True, 'editable': True, 'width': 100},
 
