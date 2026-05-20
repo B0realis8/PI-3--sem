@@ -31,13 +31,13 @@ def content() -> None:
     
 
     column_defs = [
-        {'field': 'id_venda', 'headerName': 'Venda #', 'sortable': True, 'editable': False},
+        {'field': 'id_venda', 'headerName': 'Venda #', 'sortable': True, 'editable': False, 'sort': 'desc'},
         {'field': 'data_venda', 'headerName': 'Data da Venda', 'sortable': True, 'editable': True,'filter': 'agDateColumnFilter', 'valueFormatter': 'value ? value.split("-").reverse().join("/") : "N/A"'},
         {'field': 'id_orcamento', 'headerName': 'Orcamento #', 'sortable': True, 'editable': True},
-        {'field': 'nome', 'headerName': 'Cliente', 'sortable': True, 'editable': True},
+        {'field': 'nome', 'headerName': 'Cliente', 'sortable': True, 'editable': True, 'wrapText': False,  'cellStyle': {'white-space': 'nowrap' }},
         {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'forma_pgto', 'headerName': 'Forma de Pagamento', 'sortable': True, 'editable': True},
-        {'field': 'entrada', 'headerName': 'Entrada', 'sortable': True, 'editable': True},
+        {'field': 'entrada', 'headerName': 'Entrada', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'n_parcelas', 'headerName': 'Número de Parcelas', 'sortable': True, 'editable': True},
         {'field': 'valor_parcelas', 'headerName': 'Valor das Parcelas', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'comissao', 'headerName': 'Comissão', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
@@ -68,7 +68,7 @@ def content() -> None:
             'rowSelection': 'single',
             'defaultColDef': {'cellStyle': {'display': 'flex', 'align-items': 'center', 'white-space': 'pre-wrap' }},
             'pagination': True,
-            'paginationPageSize': 10,    # Rows per page
+            'paginationPageSize': 20,    # Rows per page
             'paginationPageSizeSelector': [10, 20, 50, 100], # User can pick page size
         }, html_columns=[],theme='balham').classes('w-full flex-grow')
         grid_ref['grid'] = grid
@@ -83,7 +83,7 @@ def content() -> None:
         
         selected_id = event.value
         # Fetch new data
-        data = db_connection.get_orcamentos_vendas()
+        data = db_connection.teste_get_orcamentos()
         # notify(str(data), type='info')
         for row in data:
             if row['id_orcamento'] == selected_id:
@@ -115,7 +115,7 @@ def content() -> None:
             cidade_destino_ida.set_value(data['cidade_destino_ida'])
             aeroporto_destino_ida.set_value(data['aeroporto_destino_ida'])
             #data_destino.set_value(data['data_destino']) adicionar no bd
-            companhia_ida.set_value(data['companhia_ida'])
+            companhia_ida.set_value(data['nome_companhia_ida'])
             valor_passagem_ida.set_value(data['valor_passagem_ida'])
             qtd_passagens_ida.set_value(data['qtd_passagens_ida'])
             observacoes_ida.set_value(data['obs_ida'])
@@ -129,7 +129,7 @@ def content() -> None:
             cidade_destino_volta.set_value(data['cidade_destino_volta'])
             aeroporto_destino_volta.set_value(data['aeroporto_destino_volta'])
             #data_destino.set_value(data['data_destino']) adicionar no bd
-            companhia_volta.set_value(data['companhia_volta'])
+            companhia_volta.set_value(data['nome_companhia_volta'])
             valor_passagem_volta.set_value(data['valor_passagem_volta'])
             qtd_passagens_volta.set_value(data['qtd_passagens_volta'])
             observacoes_volta.set_value(data['obs_volta'])
@@ -431,7 +431,7 @@ def content() -> None:
         
         selected_id = event.value
         # Fetch new data
-        data = db_connection.get_orcamentos_vendas()
+        data = db_connection.teste_get_orcamentos()
         # notify(str(data), type='info')
         for row in data:
             if row['id_orcamento'] == selected_id:
@@ -463,7 +463,7 @@ def content() -> None:
             cidade_destino_ida_edit.set_value(data['cidade_destino_ida'])
             aeroporto_destino_ida_edit.set_value(data['aeroporto_destino_ida'])
             #data_destino.set_value(data['data_destino']) adicionar no bd
-            companhia_ida_edit.set_value(data['companhia_ida'])
+            companhia_ida_edit.set_value(data['nome_companhia_ida'])
             valor_passagem_ida_edit.set_value(data['valor_passagem_ida'])
             qtd_passagens_ida_edit.set_value(data['qtd_passagens_ida'])
             observacoes_ida_edit.set_value(data['obs_ida'])
@@ -477,7 +477,7 @@ def content() -> None:
             cidade_destino_volta_edit.set_value(data['cidade_destino_volta'])
             aeroporto_destino_volta_edit.set_value(data['aeroporto_destino_volta'])
             #data_destino.set_value(data['data_destino']) adicionar no bd
-            companhia_volta_edit.set_value(data['companhia_volta'])
+            companhia_volta_edit.set_value(data['nome_companhia_volta'])
             valor_passagem_volta_edit.set_value(data['valor_passagem_volta'])
             qtd_passagens_volta_edit.set_value(data['qtd_passagens_volta'])
             observacoes_volta_edit.set_value(data['obs_volta'])
@@ -795,7 +795,7 @@ def content() -> None:
             notify("Nenhum orçamento selecionado.", type='warning')
             return
         # Fetch new data
-        data = db_connection.get_orcamentos_vendas()
+        data = db_connection.teste_get_orcamentos()
 
         for row in data:
             if row['id_orcamento'] == selected_id:
@@ -834,7 +834,7 @@ def content() -> None:
             cidade_destino_ida_edit.set_value(data['cidade_destino_ida'])
             aeroporto_destino_ida_edit.set_value(data['aeroporto_destino_ida'])
             #data_destino.set_value(data['data_destino']) adicionar no bd
-            companhia_ida_edit.set_value(data['companhia_ida'])
+            companhia_ida_edit.set_value(data['nome_companhia_ida'])
             valor_passagem_ida_edit.set_value(data['valor_passagem_ida'])
             qtd_passagens_ida_edit.set_value(data['qtd_passagens_ida'])
             observacoes_ida_edit.set_value(data['obs_ida'])
@@ -848,7 +848,7 @@ def content() -> None:
             cidade_destino_volta_edit.set_value(data['cidade_destino_volta'])
             aeroporto_destino_volta_edit.set_value(data['aeroporto_destino_volta'])
             #data_destino.set_value(data['data_destino']) adicionar no bd
-            companhia_volta_edit.set_value(data['companhia_volta'])
+            companhia_volta_edit.set_value(data['nome_companhia_volta'])
             valor_passagem_volta_edit.set_value(data['valor_passagem_volta'])
             qtd_passagens_volta_edit.set_value(data['qtd_passagens_volta'])
             observacoes_volta_edit.set_value(data['obs_volta'])
@@ -900,6 +900,8 @@ def edit_venda(grid_ref, selected_row, data_venda, id_orcamento, forma_pgto, val
     
     db_connection.update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda)
     dialog.close()
+
+    db_connection.update_dw()
     
     novos_valores = db_connection.get_vendas()
     grid = grid_ref.get('grid')
@@ -936,6 +938,7 @@ async def on_cell_edit(grid_ref, selected_row):
     #ui.notify('Venda selecionada:' + str(), type='warning')
 
     db_connection.update_status_venda(status, id_venda)
+    db_connection.update_dw()
 
 
     novos_valores = db_connection.get_vendas()
