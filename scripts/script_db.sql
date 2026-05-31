@@ -6,12 +6,12 @@ CREATE TABLE vendas (
 id_venda SERIAL PRIMARY KEY,
 data_venda DATE NOT NULL,
 id_orcamento INT REFERENCES orcamento(id_orcamento),
-forma_pgto VARCHAR(20),
+forma_pgto VARCHAR(20) CHECK (forma_pgto IN('Boleto', 'Cartão de crédito', 'Cartão de débito','PIX','Dinheiro')),
 valor_final NUMERIC(20,2),
 entrada NUMERIC(20,2),
 n_parcelas INT,
 valor_parcelas NUMERIC(10,2),
-comissao NUMERIC
+comissao NUMERIC,
 status_venda VARCHAR(20) CHECK (status_venda IN ('Pendente', 'Concluída', 'Cancelada'))
 
 );
@@ -25,10 +25,29 @@ sexo CHAR(1) CHECK (sexo in('F','M')),
 data_nascimento DATE,
 cpf CHAR(11) NOT NULL UNIQUE,
 telefone CHAR(15),
-cidade VARCHAR(50),
+cidade INT REFERENCES cidades(id),
 estado CHAR(2)
 
 );
+
+DROP TABLE IF EXISTS paises CASCADE;
+CREATE TABLE paises (
+
+id INT PRIMARY KEY,
+pais VARCHAR,
+pais_en VARCHAR
+
+)
+
+DROP TABLE IF EXISTS cidades CASCADE;
+CREATE TABLE cidades (
+
+pais VARCHAR,
+cidade VARCHAR,
+id INT PRIMARY KEY,
+id_pais INT REFERENCES paises(id)
+
+)
 
 
 DROP TABLE IF EXISTS produto CASCADE;
@@ -36,10 +55,10 @@ CREATE TABLE produto (
 
 id_produto SERIAL PRIMARY KEY,
 nome_produto VARCHAR(100),
-tipo VARCHAR(20),
+tipo VARCHAR(20) CHECK (tipo IN('Intercâmbio','Pacote de viagem')) ,
 valor_minimo NUMERIC(10,2),
-pais VARCHAR(50),
-cidade VARCHAR(50)
+pais INT REFERENCES paises (id),
+cidade INT REFERENCES cidades(id)
 
 );
 
@@ -71,7 +90,7 @@ CREATE TABLE companhia_aerea (
 
 id_companhia SERIAL PRIMARY KEY,
 nome_companhia VARCHAR(50),
-pais VARCHAR(50)
+pais INT REFERENCES paises(id)
 
 );
 
@@ -80,19 +99,19 @@ DROP TABLE IF EXISTS voo CASCADE;
 CREATE TABLE voo (
 
 id_voo SERIAL PRIMARY KEY,
-pais_saida VARCHAR(50),
-cidade_saida VARCHAR(50),
+pais_saida INT REFERENCES paises(id),
+cidade_saida INT REFERENCES cidades(id),
 aeroporto_saida CHAR(3),
 dt_hr_saida TIMESTAMP,
-pais_destino VARCHAR(50),
-cidade_destino VARCHAR(50),
+pais_destino INT REFERENCES paises(id),
+cidade_destino INT REFERENCES cidades(id),
 aeroporto_destino CHAR(3),
 dt_hr_chegada TIMESTAMP,
 valor_passagem NUMERIC(10,2),
 id_companhia INT REFERENCES companhia_aerea(id_companhia),
 qtd_passagens INT,
 obs TEXT,
-ida_volta VARCHAR(10) CHECK (ida_volta IN ('Ida', 'Volta'))
+ida_volta VARCHAR(10) CHECK (ida_volta IN ('Ida', 'Volta')),
 id_orcamento INT REFERENCES orcamento(id_orcamento)
 
 );
@@ -149,3 +168,6 @@ performance_bucket VARCHAR(10),
 produto_id INT REFERENCES produto(id_produto)
 
 )
+
+ALTER 
+UPDATE vendas SET status_venda = 'Concluida' WHERE status_venda = 
