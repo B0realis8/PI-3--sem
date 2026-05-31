@@ -48,7 +48,7 @@ def with_base_layout(route_handler):
 
 @ui.page('/')
 @with_base_layout
-def root():
+async def root():
     ui.sub_pages({
     '/': cadastro_venda,
     '/mostrar_instagram': mostrar_instagram,
@@ -64,8 +64,8 @@ def cadastro_venda():
 def mostrar_instagram():
     routes.instagram.content()
 
-def mostrar_produtos():
-    routes.produto.content()
+async def mostrar_produtos():
+    await routes.produto.content()
 
 def mostrar_orcamentos():
     routes.cadastro_orçamento.content()
