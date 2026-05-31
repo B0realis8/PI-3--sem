@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from urllib.parse import urlparse
 import asyncio
 from sqlalchemy import create_engine, text
+import aiopg
 
 # Force UTF-8 output on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -65,46 +66,13 @@ def get_produtos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("produto"))
+        query = sql.SQL("SELECT p.*, paises.pais AS nome_pais ,c.cidade AS nome_cidade FROM {} p LEFT JOIN cidades c ON p.cidade = c.id LEFT JOIN paises ON c.id_pais = paises.id").format(sql.Identifier("produto"))
         cur.execute(query)
         produtos = cur.fetchall()
         conn.close()
         return produtos
     else:
         return []
-
-async def update_instagram_table():
-    conn = db_connection()
-    if conn:
-        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        with open('./databases/Instagram Analytics.csv', 'r') as f:
-            next(f)
-            cur.copy_from(f, 'instagram', sep=',', columns=["account_id","account_type","follower_count","media_type","content_category","traffic_source","has_call_to_action","post_datetime","post_date","post_hour","day_of_week","likes","comments","shares","saves","reach","impression","engagement_rate","followers_gained","caption_length","hashtags_count","performance_bucket_label"])
-            conn.commit()
-            conn.close()
-    else:
-        print("Não foi possível conectar ao banco de dados para atualizar a tabela Instagram.")
-
-async def add_user(account_id, account_type, follower_count, media_type, content_category, traffic_source, has_call_to_action, post_datetime, post_date, post_hour, day_of_week, likes, comments, shares, saves, reach, impression, engagement_rate, followers_gained, caption_length, hashtags_count, performance_bucket_label   ):
-    conn = db_connection()
-    cur = conn.cursor()
-    cur.execute("INSERT INTO instagram (account_id, account_type, follower_count, media_type, content_category, traffic_source, has_call_to_action, post_datetime, post_date, post_hour, day_of_week, likes, comments, shares, saves, reach, impression, engagement_rate, followers_gained, caption_length, hashtags_count, performance_bucket_label) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s， %s， %s， %s， %s， %s， %s， %s， %s， %s， %s， %s)", 
-                (account_id, account_type, follower_count, media_type, content_category, traffic_source, has_call_to_action, post_datetime, post_date,
-                 post_hour,
-                 day_of_week,
-                 likes,
-                 comments,
-                 shares,
-                 saves,
-                 reach,
-                 impression,
-                 engagement_rate,
-                 followers_gained,
-                 caption_length,
-                 hashtags_count,
-                 performance_bucket_label))
-    conn.commit()
-    conn.close()
 
 
 def add_produto(nome, tipo, valor_minimo, pais, cidade):
@@ -137,46 +105,46 @@ def delete_produto(id_produto):
 
 # ── Orçamento Functions ─────────────────────────────────────────────
 
-def get_orcamentos():
-    conn = db_connection()
-    if conn:
-        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_cliente, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, \
-                        o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, \
-                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Ida') AS voo_lista_ida ,\
-                        json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta, \
-                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Ida') AS valor_passagem_ida, \
-                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Ida') AS qtd_passagens_ida, \
-                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Ida') AS obs_ida, \
-                        sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Volta') AS valor_passagem_volta, \
-                        sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Volta') AS qtd_passagens_volta, \
-                        string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Volta') AS obs_volta,  \
-                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_ida WHERE ida_volta = 'Ida' AND id_orcamento = o.id_orcamento) AS companhia_ida, \
-                        (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_volta WHERE ida_volta = 'Volta' AND id_orcamento = o.id_orcamento), \
-                        s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, \
-                        c.nome \
-                        FROM {} o \
-                        LEFT JOIN {} p ON p.id_produto = o.id_produto \
-                        LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
-                        LEFT JOIN {} h ON o.id_hospedagem = h.id_hospedagem \
-                        LEFT JOIN {} s ON o.id_servico = s.id_servico \
-                        LEFT JOIN {} voo ON o.id_orcamento = voo.id_orcamento \
-                        LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia \
-                        GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos").format(
-            sql.Identifier("orcamento"),
-            sql.Identifier("produto"),
-            sql.Identifier("cliente"),
-            sql.Identifier("hospedagem"),
-            sql.Identifier("servico"),
-            sql.Identifier("voo"),
-            sql.Identifier("servico"),
-        )
-        cur.execute(query)
-        orcamentos = cur.fetchall()
-        conn.close()
-        return orcamentos
-    else:
-        return []
+# def get_orcamentos():
+#     conn = db_connection()
+#     if conn:
+#         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+#         query = sql.SQL("SELECT o.id_orcamento, p.id_produto, o.id_cliente, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, \
+#                         o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, \
+#                         json_agg(voo.*) FILTER (WHERE ida_volta = 'Ida') AS voo_lista_ida ,\
+#                         json_agg(voo.*) FILTER (WHERE ida_volta = 'Volta') AS voo_lista_volta, \
+#                         sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Ida') AS valor_passagem_ida, \
+#                         sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Ida') AS qtd_passagens_ida, \
+#                         string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Ida') AS obs_ida, \
+#                         sum(voo.valor_passagem) FILTER (WHERE ida_volta = 'Volta') AS valor_passagem_volta, \
+#                         sum(voo.qtd_passagens) FILTER (WHERE ida_volta = 'Volta') AS qtd_passagens_volta, \
+#                         string_agg(voo.obs,'') FILTER (WHERE ida_volta = 'Volta') AS obs_volta,  \
+#                         (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_ida WHERE ida_volta = 'Ida' AND id_orcamento = o.id_orcamento) AS companhia_ida, \
+#                         (SELECT nome_companhia FROM (SELECT comp.nome_companhia, o.id_orcamento,voo.ida_volta FROM companhia_aerea comp LEFT JOIN voo ON comp.id_companhia = voo.id_companhia INNER JOIN orcamento o ON voo.id_orcamento = o.id_orcamento) AS companhia_volta WHERE ida_volta = 'Volta' AND id_orcamento = o.id_orcamento), \
+#                         s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, \
+#                         c.nome \
+#                         FROM {} o \
+#                         LEFT JOIN {} p ON p.id_produto = o.id_produto \
+#                         LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
+#                         LEFT JOIN {} h ON o.id_hospedagem = h.id_hospedagem \
+#                         LEFT JOIN {} s ON o.id_servico = s.id_servico \
+#                         LEFT JOIN {} voo ON o.id_orcamento = voo.id_orcamento \
+#                         LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia \
+#                         GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos").format(
+#             sql.Identifier("orcamento"),
+#             sql.Identifier("produto"),
+#             sql.Identifier("cliente"),
+#             sql.Identifier("hospedagem"),
+#             sql.Identifier("servico"),
+#             sql.Identifier("voo"),
+#             sql.Identifier("servico"),
+#         )
+#         cur.execute(query)
+#         orcamentos = cur.fetchall()
+#         conn.close()
+#         return orcamentos
+#     else:
+#         return []
 
 def get_voos():
     conn = db_connection()
@@ -225,6 +193,7 @@ def add_cliente(nome, sexo, data_nascimento, cpf, telefone, adicionar_cliente, i
     adicionar_cliente.close()
     id_input_cliente.options = {c['id_cliente']: c['nome'] for c in get_clientes()} if get_clientes() else {}
     id_input_cliente.value = id_cliente
+
 
 
 def add_orcamento(id_produto,
@@ -418,7 +387,6 @@ def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_p
     update_dw()
 
     conn.close()
-    print(f"Updated: {id_venda}")
 
 def update_status_venda(status_venda, id_venda):
     conn = db_connection()
@@ -430,7 +398,6 @@ def update_status_venda(status_venda, id_venda):
     conn.commit()
     cur.close()
     conn.close()
-    print(f"Updated status_venda: {id_venda} to {status_venda}")
 
 def delete_venda(id_venda):
     conn = db_connection()
@@ -524,14 +491,10 @@ def teste_get_orcamentos():
         orcamentos = cur.fetchall()
         conn.close()
         data = pd.DataFrame(orcamentos)
-        #print(data['voo_lista_ida'][0][0]['id_voo'])
         columns_ida = pd.json_normalize(data['voo_lista_ida'].explode()).add_suffix('_ida')
         columns_volta = pd.json_normalize(data['voo_lista_volta'].explode()).add_suffix('_volta')
         data = data.join(columns_ida).join(columns_volta)
-        print(data.head())
         #data.to_csv('orcamentos_completo.csv', index=False)
-        print(data.to_dict(orient='records'))
-        print(orcamentos)
         return data.to_dict("records")
     else:
         return []
@@ -643,9 +606,42 @@ def update_dw(conn=None):
     return
 
 
+def search_database_paises(search_query: str) -> dict:
+    if not search_query or len(search_query) < 2:
+        return {}  # Avoid searching for single characters to save database load
+        
+    conn = db_connection()
+    cur = conn.cursor() # Fast standard tuple cursor
+    
+    # Use ILIKE for case-insensitive matching; % formats the wildcard
+    sql = "SELECT id, pais FROM paises WHERE pais ILIKE %s LIMIT 50"
+    cur.execute(sql, (f"%{search_query}%",))
+    rows = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    # Fast CPython dictionary comprehension
+    return {str(row[0]): row[1] for row in rows}
 
 
-
+def search_database_cidades(search_query: str, pais: str) -> dict:
+    if not search_query or len(search_query) < 2:
+        return {}  # Avoid searching for single characters to save database load
+        
+    conn = db_connection()
+    cur = conn.cursor() # Fast standard tuple cursor
+    
+    # Use ILIKE for case-insensitive matching; % formats the wildcard
+    sql = "SELECT id, cidade FROM cidades WHERE cidade ILIKE %s AND id_pais = %s LIMIT 50"
+    cur.execute(sql, (f"%{search_query}%", pais))
+    rows = cur.fetchall()
+    
+    cur.close()
+    conn.close()
+    
+    # Fast CPython dictionary comprehension
+    return {str(row[0]): row[1] for row in rows}
 
 
 
