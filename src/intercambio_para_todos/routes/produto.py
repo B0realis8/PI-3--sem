@@ -6,7 +6,7 @@ import re
 
 @ui.page('/mostrar_produtos')
 
-def content() -> None:
+async def content() -> None:
 
     ui.add_head_html('<style>.ag-row { cursor: pointer; }</style>')
 
@@ -26,8 +26,8 @@ def content() -> None:
         {'field': 'nome_produto', 'headerName': 'Nome', 'sortable': True, 'editable': True},
         {'field': 'tipo', 'headerName': 'Tipo', 'sortable': True, 'editable': True},
         {'field': 'valor_minimo', 'headerName': 'Valor Mínimo', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
-        {'field': 'pais', 'headerName': 'País', 'sortable': True, 'editable': True},
-        {'field': 'cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
+        {'field': 'nome_pais', 'headerName': 'País', 'sortable': True, 'editable': True},
+        {'field': 'nome_cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
     ]
 
     grid_ref = {}
@@ -47,7 +47,7 @@ def content() -> None:
             'rowSelection': 'single',
             'defaultColDef': {'cellStyle': {'display': 'flex', 'align-items': 'center', 'white-space': 'pre-wrap' }},
             'pagination': True,
-            'paginationPageSize': 10,    # Rows per page
+            'paginationPageSize': 20,    # Rows per page
             'paginationPageSizeSelector': [10, 20, 50, 100], # User can pick page size
         }, html_columns=[],theme='balham').classes('w-full flex-grow')
         grid_ref['grid'] = grid
@@ -98,34 +98,65 @@ def content() -> None:
 
     with ui.page_sticky(position='bottom-right', x_offset=20, y_offset=20).classes('flex items-end gap-3'):
         with ui.column().classes('items-center gap-3'):
-            ui.button(icon='add', on_click=lambda: dialog.open(), color='primary').props('fab')
+            ui.button(icon='add', on_click=lambda: render_dialog(), color='primary').props('fab')
+
+                
+    # paises = db_connection.get_paises()
+    # cidades = db_connection.get_cidades()
+    async def render_dialog():
+
+        async def on_filter_pais(e):
+            notify(e.args, type='info')
+            search_term = e.args[0]
+            # Fetch filtered data
+            filtered_options = db_connection.search_database_paises(search_term)
+            
+            # Update the UI options dynamically
+            pais.options = filtered_options
+            pais.update()
+            cidade.value = None
+            cidade.options = []
+        
+        async def on_filter_cidade(e):
+            notify(e.args, type='info')
+            search_term = e.args[0]
+            # Fetch filtered data
+            filtered_options = db_connection.search_database_cidades(search_term, pais.value)
+            
+            # Update the UI options dynamically
+            cidade.options = filtered_options
+            cidade.update()
     
-    with ui.dialog() as dialog, ui.card().classes('w-150').style('padding: 20px'):
-        ui.label('Adicionar Produto').classes('text-lg font-bold mb-4')
-        with ui.row().classes("w-full"):
-            with ui.card().classes("flex-grow"):
-                with ui.column().classes("w-full"):
-                    
-                    ui.label('Nome do produto').classes('text-sm font-medium mb-1')
-                    nome_produto = ui.input(label='Nome do produto', placeholder='Digite o nome do produto').props('outlined rounded dense').classes('w-full')
+        with ui.dialog() as dialog, ui.card().classes('w-150').style('padding: 20px'):
+            ui.label('Adicionar Produto').classes('text-lg font-bold mb-4')
+            with ui.row().classes("w-full"):
+                with ui.card().classes("flex-grow"):
+                    with ui.column().classes("w-full"):
 
-                    ui.label('Tipo').classes('text-sm font-medium mb-1')
-                    tipo = ui.select(['Intercâmbio','Pacote de viagem'],label='Tipo').classes('w-full')
+                        # paises = await update_paises()
 
-                    ui.label('País').classes('text-sm font-medium mb-1')
-                    pais = ui.select(['Brasil', 'Estados Unidos', 'Reino Unido', 'Canadá', 'Austrália'], label='País',with_input=True,new_value_mode='add').classes('w-full')
+                        ui.label('Nome do produto').classes('text-sm font-medium mb-1')
+                        nome_produto = ui.input(label='Nome do produto', placeholder='Digite o nome do produto').props('outlined rounded dense').classes('w-full')
 
-                    ui.label('Cidade').classes('text-sm font-medium mb-1')
-                    cidade = ui.input(label='Cidade').classes('w-full')
+                        ui.label('Tipo').classes('text-sm font-medium mb-1')
+                        tipo = ui.select(['Intercâmbio','Pacote de viagem'],label='Tipo').classes('w-full')
 
-                    ui.label('Valor Mínimo do pacote').classes('text-sm font-medium mb-1')
-                    valor_minimo = ui.number(label='Valor Mínimo', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
+                        ui.label('País').classes('text-sm font-medium mb-1')
+                        pais = ui.select({}, label='País',with_input=True, on_change=lambda e: notify(e.value, type='info')).classes('w-full').on('filter', lambda e: on_filter_pais(e))
+
+                        ui.label('Cidade').classes('text-sm font-medium mb-1')
+                        cidade = ui.select({}, label='Cidade',with_input=True).classes('w-full').on('filter', lambda e: on_filter_cidade(e))
+
+                        ui.label('Valor Mínimo do pacote').classes('text-sm font-medium mb-1')
+                        valor_minimo = ui.number(label='Valor Mínimo', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
 
 
-                with ui.row().classes("justify-end gap-2 q-mt-lg"):
-                    ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, nome_produto.value,tipo.value, valor_minimo.value,  pais.value, cidade.value,dialog)).classes('button button-primary').style('margin-right: 8px;')
-                    ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
-                    ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar produto'))
+                    with ui.row().classes("justify-end gap-2 q-mt-lg"):
+                        ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, nome_produto.value,tipo.value, valor_minimo.value, pais.value, cidade.value,dialog)).classes('button button-primary').style('margin-right: 8px;')
+                        ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
+                        ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar produto'))
+
+        return dialog.open()
     
 
     with ui.dialog() as edit_dialog, ui.card().classes('w-150').style('padding: 20px'):
@@ -215,3 +246,18 @@ async def delete_selected(grid_ref,selected_row,edit_dialog):
         ui.notify('Operação cancelada', type='info')
 
     edit_dialog.close()
+
+async def update_paises():
+    try:
+        paises = await db_connection.get_paises()
+        notify(paises[0]['pais'])
+        return paises
+    except Exception as e:
+        notify(f"Erro ao carregar países: {str(e)}", type='error')
+        return []
+    
+
+
+
+
+
