@@ -421,7 +421,7 @@ def content() -> None:
 
             
 
-    orcamentos = db_connection.get_orcamentos()
+    orcamentos = db_connection.teste_get_orcamentos()
     id_orcamento_input.options = {o['id_orcamento']: "Orçamento #"+str(o['id_orcamento'])+" - "+o['nome'] for o in orcamentos} if orcamentos else {}
     id_orcamento_input.update()
 
