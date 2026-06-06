@@ -28,7 +28,9 @@ async def content() -> None:
         {'field': 'valor_minimo', 'headerName': 'Valor Mínimo', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
         {'field': 'nome_pais', 'headerName': 'País', 'sortable': True, 'editable': True},
         {'field': 'nome_cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True},
-    ]
+        {'field': 'pais', 'headerName': 'País', 'sortable': True, 'editable': True, 'hide': True},
+        {'field': 'cidade', 'headerName': 'Cidade', 'sortable': True, 'editable': True, 'hide': True},
+        ]
 
     grid_ref = {}
     with ui.row().classes('w-full items-center gap-3 mb-3 flex-wrap'):
@@ -66,15 +68,19 @@ async def content() -> None:
             selected_rows = await grid.get_selected_rows()
             if selected_rows:
                 selected_row['data'] = selected_rows[0]
-                notify(f"Selected: {selected_row['data']['nome_produto']}", type='info')
+                # notify(f"Selected: {selected_row['data']['nome_produto']}", type='info')
                 
                 # Capture values at selection time (not by reference)
                 row = selected_row['data']
                 nome = row.get('nome_produto', '')
                 valor = row.get('valor_minimo')
                 tipo_val = row.get('tipo', '')
-                pais_val = row.get('pais', '')
-                cidade_val = row.get('cidade', '')
+                pais_val_id = row.get('pais', '')
+                cidade_val_id = row.get('cidade', '')
+                pais_val = {row.get('pais', ''): row.get('nome_pais', '')}
+                cidade_val = {row.get('cidade', ''): row.get('nome_cidade', '')}
+
+                await render_edit_dialog()
                 
                 # Clear inputs first to prevent stale values
                 edit_inputs['nome_produto'].value = ''
@@ -82,15 +88,23 @@ async def content() -> None:
                 edit_inputs['tipo'].value = None
                 edit_inputs['pais'].value = None
                 edit_inputs['cidade'].value = ''
+
+                edit_inputs['pais'].options = pais_val
+                edit_inputs['pais'].update()
+
+                edit_inputs['cidade'].options = cidade_val
+                edit_inputs['cidade'].update()
                 
-                edit_dialog.open()
+                
+                
                 # Use timer to ensure dialog renders before setting values
-                ui.timer(0.05, lambda n=nome, v=valor, t=tipo_val, p=pais_val, c=cidade_val: (
+                ui.timer(0.05, lambda n=nome, v=valor, t=tipo_val, p=pais_val_id, c=cidade_val_id: (
                     edit_inputs['nome_produto'].set_value(n),
                     edit_inputs['valor_minimo'].set_value(v),
                     edit_inputs['tipo'].set_value(t),
                     edit_inputs['pais'].set_value(p),
                     edit_inputs['cidade'].set_value(c)
+
                 ), once=True)
         
         grid.on('cellClicked', on_row_selected)
@@ -106,7 +120,7 @@ async def content() -> None:
     async def render_dialog():
 
         async def on_filter_pais(e):
-            notify(e.args, type='info')
+            # notify(e.args, type='info')
             search_term = e.args[0]
             # Fetch filtered data
             filtered_options = db_connection.search_database_paises(search_term)
@@ -118,7 +132,7 @@ async def content() -> None:
             cidade.options = []
         
         async def on_filter_cidade(e):
-            notify(e.args, type='info')
+            # notify(e.args, type='info')
             search_term = e.args[0]
             # Fetch filtered data
             filtered_options = db_connection.search_database_cidades(search_term, pais.value)
@@ -142,10 +156,10 @@ async def content() -> None:
                         tipo = ui.select(['Intercâmbio','Pacote de viagem'],label='Tipo').classes('w-full')
 
                         ui.label('País').classes('text-sm font-medium mb-1')
-                        pais = ui.select({}, label='País',with_input=True, on_change=lambda e: notify(e.value, type='info')).classes('w-full').on('filter', lambda e: on_filter_pais(e))
+                        pais = ui.select([], label='País',with_input=True).classes('w-full').on('filter', lambda e: on_filter_pais(e))
 
                         ui.label('Cidade').classes('text-sm font-medium mb-1')
-                        cidade = ui.select({}, label='Cidade',with_input=True).classes('w-full').on('filter', lambda e: on_filter_cidade(e))
+                        cidade = ui.select([], label='Cidade',with_input=True).classes('w-full').on('filter', lambda e: on_filter_cidade(e))
 
                         ui.label('Valor Mínimo do pacote').classes('text-sm font-medium mb-1')
                         valor_minimo = ui.number(label='Valor Mínimo', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
@@ -158,33 +172,58 @@ async def content() -> None:
 
         return dialog.open()
     
+    async def render_edit_dialog():
 
-    with ui.dialog() as edit_dialog, ui.card().classes('w-150').style('padding: 20px'):
-        ui.label('Editar Produto').classes('text-lg font-bold mb-4')
-        with ui.row().classes("w-full"):
-            with ui.card().classes("flex-grow"):
-                with ui.column().classes("w-full"):
-                    
-                    ui.label('Nome do produto').classes('text-sm font-medium mb-1')
-                    edit_inputs['nome_produto'] = ui.input(label='Nome do produto', placeholder='Digite o nome do produto').props('outlined rounded dense').classes('w-full')
+        async def on_filter_pais(e):
+            # notify(e.args, type='info')
+            search_term = e.args[0]
+            # Fetch filtered data
+            filtered_options = db_connection.search_database_paises(search_term)
+            
+            # Update the UI options dynamically
+            edit_inputs['pais'].options = filtered_options
+            edit_inputs['pais'].update()
+            edit_inputs['cidade'].value = None
+            edit_inputs['cidade'].options = []
+        
+        async def on_filter_cidade(e):
+            # notify(e.args, type='info')
+            search_term = e.args[0]
+            # Fetch filtered data
+            filtered_options = db_connection.search_database_cidades(search_term, edit_inputs['pais'].value)
+            
+            # Update the UI options dynamically
+            edit_inputs['cidade'].options = filtered_options
+            edit_inputs['cidade'].update()
+        
+        with ui.dialog() as edit_dialog, ui.card().classes('w-150').style('padding: 20px'):
+            ui.label('Editar Produto').classes('text-lg font-bold mb-4')
+            with ui.row().classes("w-full"):
+                with ui.card().classes("flex-grow"):
+                    with ui.column().classes("w-full"):
+                        
+                        ui.label('Nome do produto').classes('text-sm font-medium mb-1')
+                        edit_inputs['nome_produto'] = ui.input(label='Nome do produto', placeholder='Digite o nome do produto').props('outlined rounded dense').classes('w-full')
 
-                    ui.label('Tipo').classes('text-sm font-medium mb-1')
-                    edit_inputs['tipo'] = ui.select(['Intercâmbio','Pacote de viagem'],label='Tipo').classes('w-full')
+                        ui.label('Tipo').classes('text-sm font-medium mb-1')
+                        edit_inputs['tipo'] = ui.select(['Intercâmbio','Pacote de viagem'],label='Tipo').classes('w-full')
 
-                    ui.label('País').classes('text-sm font-medium mb-1')
-                    edit_inputs['pais'] = ui.select(['Brasil', 'Estados Unidos', 'Reino Unido', 'Canadá', 'Austrália'], label='País',with_input=True,new_value_mode='add').classes('w-full')
+                        ui.label('País').classes('text-sm font-medium mb-1')
+                        edit_inputs['pais'] =  ui.select({}, label='País',with_input=True, on_change=lambda e: notify("Pais selecionado: " + str(e.value), type='info')).classes('w-full').on('filter', lambda e: on_filter_pais(e))
 
-                    ui.label('Cidade').classes('text-sm font-medium mb-1')
-                    edit_inputs['cidade'] = ui.input(label='Cidade').classes('w-full')
+                        ui.label('Cidade').classes('text-sm font-medium mb-1')
+                        edit_inputs['cidade'] = ui.select({}, label='Cidade',with_input=True).classes('w-full').on('filter', lambda e: on_filter_cidade(e))
 
-                    ui.label('Valor Mínimo do pacote').classes('text-sm font-medium mb-1')
-                    edit_inputs['valor_minimo'] = ui.number(label='Valor Mínimo', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
+                        ui.label('Valor Mínimo do pacote').classes('text-sm font-medium mb-1')
+                        edit_inputs['valor_minimo'] = ui.number(label='Valor Mínimo', placeholder='0.00',min=0, format='%.2f').props('prefix=R$').classes('w-full')
 
-                with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                    ui.button('Confirmar', on_click=lambda: edit_produto(grid_ref, selected_row, edit_inputs['nome_produto'].value, edit_inputs['tipo'].value, edit_inputs['valor_minimo'].value, edit_inputs['pais'].value, edit_inputs['cidade'].value, edit_dialog)).classes('button button-primary').style('margin-right: 8px;')
-                    ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
-                    ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
-                    ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar produto'))
+                    with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
+                        ui.button('Confirmar', on_click=lambda: edit_produto(grid_ref, selected_row, edit_inputs['nome_produto'].value, edit_inputs['tipo'].value, edit_inputs['valor_minimo'].value, edit_inputs['pais'].value, edit_inputs['cidade'].value, edit_dialog)).classes('button button-primary').style('margin-right: 8px;')
+                        ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
+                        ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
+                        ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar produto'))
+
+        return edit_dialog.open()
 
             
 def on_cell_change(e):
