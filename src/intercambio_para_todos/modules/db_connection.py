@@ -162,7 +162,12 @@ def get_voos_w_id(id):
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT * FROM {} WHERE id_orcamento = %s").format(sql.Identifier("voo"))
+        query = sql.SQL("SELECT {}.*, ci_saida.cidade AS cidade_saida_nome, ci_destino.cidade AS cidade_destino_nome, pais_saida.pais AS pais_saida_nome, pais_destino.pais AS pais_destino_nome FROM {}\
+		                    LEFT JOIN cidades ci_saida ON voo.cidade_saida = ci_saida.id\
+                            LEFT JOIN cidades ci_destino ON voo.cidade_destino = ci_destino.id\
+                            LEFT JOIN paises pais_saida ON pais_saida.id = ci_saida.id_pais\
+                            LEFT JOIN paises pais_destino ON pais_destino.id = ci_destino.id_pais\
+                            WHERE voo.id_orcamento = %s").format(sql.Identifier("voo"), sql.Identifier("voo"))
         cur.execute(query, (id,))
         voos = cur.fetchall()
         conn.close()
@@ -174,7 +179,7 @@ def get_clientes():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("cliente"))
+        query = sql.SQL("SELECT cliente.*, cidades.cidade AS nome_cidade FROM {} LEFT JOIN cidades ON cliente.cidade = cidades.id").format(sql.Identifier("cliente"))
         cur.execute(query)
         clientes = cur.fetchall()
         conn.close()
@@ -182,17 +187,25 @@ def get_clientes():
     else:
         return []
     
-def add_cliente(nome, sexo, data_nascimento, cpf, telefone, adicionar_cliente, id_input_cliente):
+def add_cliente(nome, sexo, data_nascimento, cpf, telefone, cidade, estado, adicionar_cliente, id_input_cliente=None):
     conn = db_connection()
     cur = conn.cursor()
-    cur.execute("INSERT INTO cliente (nome, sexo, data_nascimento, cpf, telefone) VALUES (%s, %s, %s, %s, %s) RETURNING id_cliente", (nome, sexo, data_nascimento, cpf, telefone))
+    cur.execute("INSERT INTO cliente (nome, sexo, data_nascimento, cpf, telefone, cidade, estado) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id_cliente", (nome, sexo, data_nascimento, cpf, telefone, cidade, estado))
     id_cliente = cur.fetchone()[0]
     conn.commit()
     conn.close()
     notify(f"Cliente adicionado com ID: {id_cliente}", type='success', title='Sucesso')
     adicionar_cliente.close()
-    id_input_cliente.options = {c['id_cliente']: c['nome'] for c in get_clientes()} if get_clientes() else {}
-    id_input_cliente.value = id_cliente
+    if id_input_cliente:
+        id_input_cliente.options = {c['id_cliente']: c['nome'] for c in get_clientes()} if get_clientes() else {}
+        id_input_cliente.value = id_cliente
+
+def update_cliente(nome, sexo, data_nascimento, cpf, telefone, cidade, estado, id_cliente):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE cliente SET nome = %s, sexo = %s, data_nascimento = %s, cpf = %s, telefone = %s, cidade = %s, estado = %s WHERE id_cliente = %s", (nome, sexo, data_nascimento, cpf, telefone, cidade, estado, id_cliente))
+    conn.commit()
+    conn.close()
 
 
 
@@ -468,17 +481,24 @@ def teste_get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.*, p.*, c.*, h.*, s.*,v.*, \
+        query = sql.SQL("SELECT o.*, p.*, c.*, h.*, s.*,v.*,paises.pais AS pais_nome, cidades.cidade AS cidade_nome, \
                         json_agg(voo_lista.*) FILTER (WHERE voo_lista.ida_volta = 'Ida') AS voo_lista_ida ,\
                         json_agg(voo_lista.*) FILTER (WHERE voo_lista.ida_volta = 'Volta') AS voo_lista_volta \
                         FROM {} o \
-                        LEFT JOIN (SELECT voo.*, comp.* FROM voo LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia) AS voo_lista ON voo_lista.id_orcamento = o.id_orcamento\
+                        LEFT JOIN (SELECT voo.*, comp.*, ci_saida.cidade AS cidade_saida_nome, ci_destino.cidade AS cidade_destino_nome, pais_saida.pais AS pais_saida_nome, pais_destino.pais AS pais_destino_nome FROM voo \
+                            LEFT JOIN companhia_aerea comp ON voo.id_companhia = comp.id_companhia\
+							LEFT JOIN cidades ci_saida ON voo.cidade_saida = ci_saida.id\
+							LEFT JOIN cidades ci_destino ON voo.cidade_destino = ci_destino.id\
+							LEFT JOIN paises pais_saida ON pais_saida.id = ci_saida.id_pais\
+							LEFT JOIN paises pais_destino ON pais_destino.id = ci_destino.id_pais) AS voo_lista ON voo_lista.id_orcamento = o.id_orcamento\
                         LEFT JOIN {} p ON p.id_produto = o.id_produto \
                         LEFT JOIN {} c ON o.id_cliente = c.id_cliente \
                         LEFT JOIN {} h ON o.id_hospedagem = h.id_hospedagem \
                         LEFT JOIN {} s ON o.id_servico = s.id_servico \
                         LEFT JOIN vendas v ON o.id_orcamento = v.id_orcamento \
-                        GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, c.id_cliente, v.id_venda").format(
+                        LEFT JOIN paises ON paises.id = p.pais \
+                        LEFT JOIN cidades ON cidades.id = p.cidade \
+                        GROUP BY o.id_orcamento, p.id_produto, o.id_cliente, o.valor_total, p.nome_produto, p.tipo, p.valor_minimo, p.pais, p.cidade, c.nome, h.id_hospedagem,h.endereco, h.diaria, h.dias, h.obs, s.id_servico, s.descricao, s.obs_servicos, s.valor_total_servicos, c.id_cliente, v.id_venda, paises.id, cidades.id").format(
             sql.Identifier("orcamento"),
             sql.Identifier("produto"),
             sql.Identifier("cliente"),
@@ -496,6 +516,22 @@ def teste_get_orcamentos():
         data = data.join(columns_ida).join(columns_volta)
         #data.to_csv('orcamentos_completo.csv', index=False)
         return data.to_dict("records")
+    else:
+        return []
+    
+def get_orcamento_simplificado(id_orcamento=None):
+    conn = db_connection()
+    if conn:
+        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
+        if id_orcamento is not None:
+            query = sql.SQL("SELECT o.id_orcamento,c.nome FROM {} o LEFT JOIN cliente c ON o.id_cliente = c.id_cliente WHERE o.id_orcamento NOT IN (SELECT id_orcamento FROM vendas) OR o.id_orcamento = %s").format(sql.Identifier("orcamento"))
+            cur.execute(query, (id_orcamento,))
+        else:
+            query = sql.SQL("SELECT o.id_orcamento,c.nome FROM {} o LEFT JOIN cliente c ON o.id_cliente = c.id_cliente WHERE o.id_orcamento NOT IN (SELECT id_orcamento FROM vendas)").format(sql.Identifier("orcamento"))
+            cur.execute(query)
+        orcamentos = cur.fetchall()
+        conn.close()
+        return orcamentos
     else:
         return []
     
