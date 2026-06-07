@@ -32,24 +32,24 @@ def frame(title: str, version: str, get_logo_func=None):
         ui.label("").classes('pr-4')
         ui.html('<div style="width: 4rem; height: 4rem; background-image: url(\'assets/css/images/logo.png\'); background-size: contain; background-repeat: no-repeat; background-position: center;"></div>', sanitize=False)
         ui.label("").classes("pr-2")
-        ui.label(title).classes('app-name')
+        ui.label(title).classes('app-name').style('color: white;')
         ui.space()
-        with ui.dropdown_button('', icon='account_circle').classes('mr-4 header-account-btn').props('flat push no-icon-animation auto-close unelevated'):
-            with ui.element('div').classes('account-dropdown'):
-                ui.label('John Doe').classes('account-name')
-                ui.element('div').classes('account-separator')
-                with ui.row().classes('account-menu-item').style('min-height: 48px;').on('click', lambda e: ui.notify('Account clicked')):
-                    ui.icon('person').classes('account-icon')
-                    ui.label('Account')
-                with ui.row().classes('account-menu-item').style('min-height: 48px;').on('click', lambda e: ui.navigate.to('/settings')):
-                    ui.icon('settings').classes('account-icon')
-                    ui.label('Settings')
-                ui.element('div').classes('account-separator')
-                with ui.row().classes('account-menu-item logout').style('min-height: 48px;').on('click', lambda e: ui.notify('Logout clicked')):
-                    ui.icon('logout').classes('account-icon')
-                    ui.label('Logout')
+        # with ui.dropdown_button('', icon='account_circle').classes('mr-4 header-account-btn').props('flat push no-icon-animation auto-close unelevated'):
+        #     with ui.element('div').classes('account-dropdown'):
+        #         ui.label('John Doe').classes('account-name')
+        #         ui.element('div').classes('account-separator')
+        #         with ui.row().classes('account-menu-item').style('min-height: 48px;').on('click', lambda e: ui.notify('Account clicked')):
+        #             ui.icon('person').classes('account-icon')
+        #             ui.label('Account')
+        #         with ui.row().classes('account-menu-item').style('min-height: 48px;').on('click', lambda e: ui.navigate.to('/settings')):
+        #             ui.icon('settings').classes('account-icon')
+        #             ui.label('Settings')
+        #         ui.element('div').classes('account-separator')
+        #         with ui.row().classes('account-menu-item logout').style('min-height: 48px;').on('click', lambda e: ui.notify('Logout clicked')):
+        #             ui.icon('logout').classes('account-icon')
+        #             ui.label('Logout')
 
-    header.style('background-color: #F8FAFD;')
+    header.style('background-color: #3393F1;')
 
     # ── Sidebar nav ──────────────────────────────────────────────────────────────────
     with ui.left_drawer().classes('text-black relative').style('background-color: #F8FAFD; transition: width 0.3s ease-in-out;').props('breakpoint=400') as left_drawer:
