@@ -421,7 +421,7 @@ def content() -> None:
 
             
 
-    orcamentos = db_connection.teste_get_orcamentos()
+    orcamentos = db_connection.get_orcamento_simplificado()
     id_orcamento_input.options = {o['id_orcamento']: "Orçamento #"+str(o['id_orcamento'])+" - "+o['nome'] for o in orcamentos} if orcamentos else {}
     id_orcamento_input.update()
 
@@ -431,8 +431,11 @@ def content() -> None:
         
         selected_id = event.value
         # Fetch new data
+        if not selected_id:
+            return
         data = db_connection.teste_get_orcamentos()
         # notify(str(data), type='info')
+        
         for row in data:
             if row['id_orcamento'] == selected_id:
                 data = row
@@ -771,9 +774,10 @@ def content() -> None:
                     ui.button('Cancelar', on_click=lambda: edit_venda_dialog.close()).classes('button button-secondary')
                     ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_venda_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
                     ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar produto'))   
-
-    id_orcamento_input_edit.options = {o['id_orcamento']: "Orçamento #"+str(o['id_orcamento'])+" - "+o['nome'] for o in orcamentos} if orcamentos else {}
-    id_orcamento_input_edit.update()
+                    
+    # orcamentos_edit = db_connection.get_orcamento_simplificado()
+    # id_orcamento_input_edit.options = {o['id_orcamento']: "Orçamento #"+str(o['id_orcamento'])+" - "+o['nome'] for o in orcamentos_edit} if orcamentos_edit else {}
+    # id_orcamento_input_edit.update()
                     
     async def on_row_selected(event):
         # Exclude status_venda column from triggering row selection
@@ -806,6 +810,10 @@ def content() -> None:
         if data:
 
            # notify(f"Orcamento selecionado: {data['id_orcamento']}, {data['pais_saida_ida']}, {data['cidade_saida_ida']}, {data['aeroporto_saida_ida']}", type='success')
+
+            orcamentos_edit = db_connection.get_orcamento_simplificado(data['id_orcamento'])
+            id_orcamento_input_edit.options = {o['id_orcamento']: "Orçamento #"+str(o['id_orcamento'])+" - "+o['nome'] for o in orcamentos_edit} if orcamentos_edit else {}
+            id_orcamento_input_edit.update()
 
             edit_venda_dialog.open()
 
