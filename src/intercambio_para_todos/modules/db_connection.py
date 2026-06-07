@@ -355,13 +355,21 @@ def get_companhias():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT * FROM {}").format(sql.Identifier("companhia_aerea"))
+        query = sql.SQL("SELECT companhia_aerea.*, paises.pais AS nome_pais, paises.id AS pais FROM {} LEFT JOIN paises ON companhia_aerea.pais = paises.id").format(sql.Identifier("companhia_aerea"))
         cur.execute(query)
         companhias = cur.fetchall()
         conn.close()
         return companhias
     else:
         return []
+
+def delete_companhia(id_companhia):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM companhia_aerea WHERE id_companhia = %s", (id_companhia,))
+    conn.commit()
+    cur.close()
+    conn.close()
     
 
 # Vendas ---------------
