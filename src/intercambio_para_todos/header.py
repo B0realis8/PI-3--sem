@@ -78,6 +78,20 @@ def frame(title: str, version: str, get_logo_func=None):
                 sidebar_labels.append(produtos_label)
         nav_links.append({'link': produtos_link, 'icon': produtos_icon, 'patterns': ['/mostrar_produtos'], 'exact': False})
 
+        with ui.link('', '/mostrar_clientes').classes('w-full no-underline text-black').style('border-radius: 2rem;') as clientes_link:
+            with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
+                clientes_icon = ui.icon('people').classes('ml-5 text-2xl flex-shrink-0')
+                clientes_label = ui.label('Clientes').classes('text-lg sidebar-label ml-3 flex-shrink-0')
+                sidebar_labels.append(clientes_label)
+        nav_links.append({'link': clientes_link, 'icon': clientes_icon, 'patterns': ['/mostrar_clientes'], 'exact': False})
+
+        with ui.link('', '/mostrar_companhias').classes('w-full no-underline text-black').style('border-radius: 2rem;') as companhias_link:
+            with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
+                companhias_icon = ui.icon('flight').classes('ml-5 text-2xl flex-shrink-0')
+                companhias_label = ui.label('Companhias aéreas').classes('text-lg sidebar-label ml-3 flex-shrink-0')
+                sidebar_labels.append(companhias_label)
+        nav_links.append({'link': companhias_link, 'icon': companhias_icon, 'patterns': ['/mostrar_companhias'], 'exact': False})
+
         # with ui.link('', '/mostrar_instagram').classes('w-full no-underline text-black').style('border-radius: 2rem;') as instagram_link:
         #     with ui.row().classes('items-center mb-2 mt-2 cursor-pointer w-full no-wrap'):
         #         instagram_icon = ui.icon('photo_camera').classes('ml-5 text-2xl flex-shrink-0')
