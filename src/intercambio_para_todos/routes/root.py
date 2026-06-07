@@ -9,6 +9,7 @@ import routes.cadastro_venda
 import routes.cadastro_orçamento
 import routes.produto
 import routes.clientes
+import routes.companhias
 
 
 with open('C:\\Users\\Renan\\Desktop\\Fatec\\PI 3º sem\\src\\intercambio_para_todos\\config.json', encoding='utf-8') as f:
@@ -55,7 +56,8 @@ async def root():
     '/mostrar_instagram': mostrar_instagram,
     '/mostrar_produtos': mostrar_produtos,
     '/mostrar_orcamentos': mostrar_orcamentos,
-    '/mostrar_clientes': mostrar_clientes
+    '/mostrar_clientes': mostrar_clientes,
+    '/mostrar_companhias': mostrar_companhias
     })
 
     # ── Sub-page handlers ────────────────────────────────────────────────────────────
@@ -74,3 +76,6 @@ async def mostrar_orcamentos():
 
 async def mostrar_clientes():
     await routes.clientes.content()
+
+async def mostrar_companhias():
+    await routes.companhias.content()
