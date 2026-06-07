@@ -74,7 +74,7 @@ async def content() -> None:
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
         with ui.column().classes('gap-0'):
-            ui.label('Orçamentos').classes('page-title')
+            ui.label('Orçamentos').classes('page-title').style('color: #3393F1 !important;')
             ui.label('Live overview · refreshes on demand').classes('text-sm text-muted')
         refresh_btn = ui.button('Atualizar', icon='refresh', color='white') \
             .props('flat no-caps').classes('button button-outline').on('click', lambda: grid.update())
@@ -126,10 +126,9 @@ async def content() -> None:
 
         {'field': 'valor_total', 'headerName': 'Valor Total', 'sortable': True, 'editable': True, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
 
-
-
     ]
 
+    
     grid_ref = {}
     with ui.row().classes('w-full items-center gap-3 mb-3 flex-wrap'):
         search = ui.input(placeholder='Buscar…').classes('flex-1').props('outlined rounded dense clearable')
@@ -155,8 +154,252 @@ async def content() -> None:
 
         search.on('update:model-value', lambda e: grid.run_grid_method(
             'setGridOption', 'quickFilterText', e.args or ''))  #verificar diferentes condições de filtro
+    
+        # Store selected row data in a closure variable
+        selected_row = {'data': None}
             
-            
+        # Store references to edit dialog inputs
+        edit_inputs = {}
+
+        async def on_row_selected(e):
+            # Use get_selected_rows() instead of event data for reliable row selection
+            selected_rows = await grid.get_selected_rows()
+
+            await render_edit_dialog()
+            if selected_rows:
+                selected_row['data'] = selected_rows[0]
+                #notify(f"Selected: Orçamento #{selected_row['data']['id_orcamento']}", type='info')
+                
+                # Capture values at selection time (not by reference)
+                row = selected_row['data']
+                id_produto = row.get('id_produto')
+                nome_produto = row.get('nome_produto')
+                tipo = row.get('tipo')
+                pais = row.get('pais_nome')
+                cidade = row.get('cidade_nome')
+                valor_minimo = row.get('valor_minimo')
+                id_cliente = row.get('id_cliente')
+                valor_total = row.get('valor_total')
+
+                endereco_hospedagem = row.get('endereco')
+                diaria = row.get('diaria')
+                dias = row.get('dias')
+                observacoes_hospedagem = row.get('obs')
+
+                descricao_servico = row.get('descricao')
+                valor_total_servicos = row.get('valor_total_servicos')
+                observacoes_servico = row.get('obs_servicos')
+
+                # Clear inputs first to prevent stale values
+                edit_inputs['id_produto'].value = None
+                edit_inputs['nome_produto'].value = None
+                edit_inputs['tipo'].value = None
+                edit_inputs['pais'].value = None
+                edit_inputs['cidade'].value = None
+                edit_inputs['valor_minimo'].value = None
+                edit_inputs['id_cliente'].value = None
+
+                edit_inputs['pais_saida_ida'].value = None
+                edit_inputs['cidade_saida_ida'].value = None
+                edit_inputs['aeroporto_saida_ida'].value = None
+                edit_inputs['data_saida_ida'].value = None
+                edit_inputs['hora_saida_ida'].value = None
+                edit_inputs['pais_destino_ida'].value = None
+                edit_inputs['cidade_destino_ida'].value = None
+                edit_inputs['aeroporto_destino_ida'].value = None
+                edit_inputs['data_chegada_ida'].value = None
+                edit_inputs['hora_chegada_ida'].value = None
+                edit_inputs['valor_passagem_ida'].value = None
+                edit_inputs['id_companhia_ida'].value = None
+                edit_inputs['obs_ida'].value = None
+                edit_inputs['qtd_passagens_ida'].value = None
+
+                edit_inputs['pais_saida_volta'].value = None
+                edit_inputs['cidade_saida_volta'].value = None
+                edit_inputs['aeroporto_saida_volta'].value = None
+                edit_inputs['data_saida_volta'].value = None
+                edit_inputs['hora_saida_volta'].value = None
+                edit_inputs['pais_destino_volta'].value = None
+                edit_inputs['cidade_destino_volta'].value = None
+                edit_inputs['aeroporto_destino_volta'].value = None
+                edit_inputs['data_chegada_volta'].value = None
+                edit_inputs['hora_chegada_volta'].value = None
+                edit_inputs['valor_passagem_volta'].value = None
+                edit_inputs['id_companhia_volta'].value = None
+                edit_inputs['obs_volta'].value = None
+                edit_inputs['qtd_passagens_volta'].value = None
+
+                edit_inputs['endereco_hospedagem_input'].value = None
+                edit_inputs['diaria_input'].value = None
+                edit_inputs['dias_input'].value = None
+                edit_inputs['observacoes_hospedagem_input'].value = None
+
+                edit_inputs['descricao_servico_input'].value = None
+                edit_inputs['valor_total_servicos_input'].value = None
+                edit_inputs['observacoes_servico_input'].value = None
+
+                produtos = db_connection.get_produtos()
+                clientes = db_connection.get_clientes()
+                companhias = db_connection.get_companhias()
+
+                voos = db_connection.get_voos_w_id(selected_rows[0]['id_orcamento'])
+                data = None
+                for row in voos:
+                    if row['ida_volta'] == 'Ida':
+                        data = row
+                        break
+
+                pais_saida_ida = data['pais_saida']
+                pais_saida_ida_nome = data['pais_saida_nome']
+                cidade_saida_ida = data['cidade_saida']
+                cidade_saida_ida_nome = data['cidade_saida_nome']
+
+                aeroporto_saida_ida = data['aeroporto_saida']
+
+                pais_destino_ida = data['pais_destino']
+                pais_destino_ida_nome = data['pais_destino_nome']
+                cidade_destino_ida = data['cidade_destino']
+                cidade_destino_ida_nome = data['cidade_destino_nome']
+
+                aeroporto_destino_ida = data['aeroporto_destino']
+
+                valor_passagem_ida = data['valor_passagem']
+                qtd_passagens_ida = data['qtd_passagens']
+                observacoes_ida = data['obs']
+                id_companhia_ida = data['id_companhia']
+
+                data = None
+                for row in voos:
+                    if row['ida_volta'] == 'Volta':
+                        data = row
+                        break
+
+                pais_saida_volta = data['pais_saida']
+                pais_saida_volta_nome = data['pais_saida_nome']
+                cidade_saida_volta = data['cidade_saida']
+                cidade_saida_volta_nome = data['cidade_saida_nome']   
+
+                aeroporto_saida_volta = data['aeroporto_saida']
+
+                pais_destino_volta = data['pais_destino']
+                pais_destino_volta_nome = data['pais_destino_nome']
+                cidade_destino_volta = data['cidade_destino']
+                cidade_destino_volta_nome = data['cidade_destino_nome']
+
+                aeroporto_destino_volta = data['aeroporto_destino']
+
+                valor_passagem_volta = data['valor_passagem']
+                qtd_passagens_volta = data['qtd_passagens']
+                observacoes_volta = data['obs']
+                id_companhia_volta = data['id_companhia']
+
+                edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}               
+                edit_inputs['id_cliente'].options = {c['id_cliente']: f"{c['nome']}" for c in clientes} if clientes else {}
+                edit_inputs['id_companhia_ida'].options = {c['id_companhia']: f"{c['nome_companhia']}" for c in companhias} if companhias else {}
+                edit_inputs['id_companhia_volta'].options = {c['id_companhia']: f"{c['nome_companhia']}" for c in companhias} if companhias else {}
+
+                edit_inputs['pais_saida_ida'].options = {pais_saida_ida: pais_saida_ida_nome} if data else {}
+                edit_inputs['cidade_saida_ida'].options = {cidade_saida_ida: cidade_saida_ida_nome} if data else {}
+
+                edit_inputs['pais_destino_ida'].options = {pais_destino_ida: pais_destino_ida_nome} if data else {}
+                edit_inputs['cidade_destino_ida'].options = {cidade_destino_ida: cidade_destino_ida_nome} if data else {}
+
+                edit_inputs['pais_saida_volta'].options = {pais_saida_volta: pais_saida_volta_nome} if data else {}
+                edit_inputs['cidade_saida_volta'].options = {cidade_saida_volta: cidade_saida_volta_nome} if data else {}
+
+                edit_inputs['pais_destino_volta'].options = {pais_destino_volta: pais_destino_volta_nome} if data else {}
+                edit_inputs['cidade_destino_volta'].options = {cidade_destino_volta: cidade_destino_volta_nome} if data else {}
+
+
+                # Set options before setting values
+                
+                # Use timer to ensure dialog renders before setting values
+                ui.timer(0.05, lambda p=id_produto,
+                        n=nome_produto,
+                        t=tipo,
+                        pa=pais,
+                        ci=cidade,
+                        vm=valor_minimo,
+                        c=id_cliente,
+                        vt=valor_total,
+
+                        p_s_ida=pais_saida_ida,
+                        c_s_ida=cidade_saida_ida,
+                        a_s_ida=aeroporto_saida_ida,
+                        p_dest_ida=pais_destino_ida,
+                        c_dest_ida=cidade_destino_ida,
+                        a_dest_ida=aeroporto_destino_ida,
+                        vp_ida=valor_passagem_ida,
+                        qtd_ida=qtd_passagens_ida,
+                        i_comp_ida=id_companhia_ida,
+                        obs_ida=observacoes_ida,
+
+                        p_s_volta=pais_saida_volta,
+                        c_s_volta=cidade_saida_volta,
+                        a_s_volta=aeroporto_saida_volta,
+                        p_dest_volta=pais_destino_volta,
+                        c_dest_volta=cidade_destino_volta,
+                        a_dest_volta=aeroporto_destino_volta,
+                        vp_volta=valor_passagem_volta,
+                        qtd_volta=qtd_passagens_volta,
+                        i_comp_volta=id_companhia_volta,
+                        obs_volta=observacoes_volta,
+
+                        endereco_hospedagem=endereco_hospedagem,
+                        diaria=diaria,
+                        qtd_dias=dias,
+                        obs_hospedagem=observacoes_hospedagem,
+
+                        descricao_servico=descricao_servico,
+                        valor_total_servicos=valor_total_servicos,
+                        obs_servicos=observacoes_servico,
+
+                        :
+                        (
+                    edit_inputs['id_produto'].set_value(p),
+                    edit_inputs['nome_produto'].set_value(p),
+                    edit_inputs['tipo'].set_value(t),
+                    edit_inputs['pais'].set_value(pa),
+                    edit_inputs['cidade'].set_value(ci),
+                    edit_inputs['valor_minimo'].set_value(vm),
+                    edit_inputs['id_cliente'].set_value(c),
+
+                    edit_inputs['pais_saida_ida'].set_value(p_s_ida),
+                    edit_inputs['cidade_saida_ida'].set_value(c_s_ida),
+                    edit_inputs['aeroporto_saida_ida'].set_value(a_s_ida),
+                    edit_inputs['pais_destino_ida'].set_value(p_dest_ida),
+                    edit_inputs['cidade_destino_ida'].set_value(c_dest_ida),
+                    edit_inputs['aeroporto_destino_ida'].set_value(a_dest_ida),
+                    edit_inputs['valor_passagem_ida'].set_value(vp_ida),
+                    edit_inputs['id_companhia_ida'].set_value(i_comp_ida),
+                    edit_inputs['obs_ida'].set_value(obs_ida),
+                    edit_inputs['qtd_passagens_ida'].set_value(qtd_ida),
+
+                    edit_inputs['pais_saida_volta'].set_value(p_s_volta),
+                    edit_inputs['cidade_saida_volta'].set_value(c_s_volta),
+                    edit_inputs['aeroporto_saida_volta'].set_value(a_s_volta),
+                    edit_inputs['pais_destino_volta'].set_value(p_dest_volta),
+                    edit_inputs['cidade_destino_volta'].set_value(c_dest_volta),
+                    edit_inputs['aeroporto_destino_volta'].set_value(a_dest_volta),
+                    edit_inputs['valor_passagem_volta'].set_value(vp_volta),
+                    edit_inputs['id_companhia_volta'].set_value(i_comp_volta),
+                    edit_inputs['obs_volta'].set_value(obs_volta),
+                    edit_inputs['qtd_passagens_volta'].set_value(qtd_volta),
+
+                    edit_inputs['endereco_hospedagem_input'].set_value(endereco_hospedagem),
+                    edit_inputs['diaria_input'].set_value(diaria),
+                    edit_inputs['dias_input'].set_value(dias),
+                    edit_inputs['observacoes_hospedagem_input'].set_value(observacoes_hospedagem),
+
+                    edit_inputs['descricao_servico_input'].set_value(descricao_servico),
+                    edit_inputs['valor_total_servicos_input'].set_value(valor_total_servicos),
+                    edit_inputs['observacoes_servico_input'].set_value(observacoes_servico),
+
+                    edit_inputs['valor_total_input'].set_value(vt)
+
+                ), once=True)
+
+        grid.on('cellClicked', on_row_selected)        
 
     with ui.page_sticky(position='bottom-right', x_offset=20, y_offset=20).classes('flex items-end gap-3'):
         with ui.column().classes('items-center gap-3'):
@@ -164,9 +407,7 @@ async def content() -> None:
 
     
 
-    def on_value_change_edit(e):
-
-        edit_inputs['valor_total_input'].value = float(edit_inputs['valor_passagem_ida'].value or 0) * int(edit_inputs['qtd_passagens_ida'].value or 0) + float(edit_inputs['valor_passagem_volta'].value or 0) * int(edit_inputs['qtd_passagens_volta'].value or 0) + float(edit_inputs['valor_total_servicos_input'].value or 0) + (float(edit_inputs['diaria_input'].value or 0) * int(edit_inputs['dias_input'].value or 0))
+    
 
     async def render_dialog():
         def on_selection_change_produto(event):
@@ -540,633 +781,394 @@ async def content() -> None:
 
         dialog.open()
 
-    # Store selected row data in a closure variable
-    selected_row = {'data': None}
-    
-    # Store references to edit dialog inputs
-    edit_inputs = {}
-    
-    async def on_row_selected(e):
-        # Use get_selected_rows() instead of event data for reliable row selection
-        selected_rows = await grid.get_selected_rows()
+    async def render_edit_dialog():
+
+        def on_value_change_edit(e):
+
+            edit_inputs['valor_total_input'].value = float(edit_inputs['valor_passagem_ida'].value or 0) * int(edit_inputs['qtd_passagens_ida'].value or 0) + float(edit_inputs['valor_passagem_volta'].value or 0) * int(edit_inputs['qtd_passagens_volta'].value or 0) + float(edit_inputs['valor_total_servicos_input'].value or 0) + (float(edit_inputs['diaria_input'].value or 0) * int(edit_inputs['dias_input'].value or 0))
+
         
-        if selected_rows:
-            selected_row['data'] = selected_rows[0]
-            #notify(f"Selected: Orçamento #{selected_row['data']['id_orcamento']}", type='info')
-            
-            # Capture values at selection time (not by reference)
-            row = selected_row['data']
-            id_produto = row.get('id_produto')
-            nome_produto = row.get('nome_produto')
-            tipo = row.get('tipo')
-            pais = row.get('pais_nome')
-            cidade = row.get('cidade_nome')
-            valor_minimo = row.get('valor_minimo')
-            id_cliente = row.get('id_cliente')
-            valor_total = row.get('valor_total')
-
-            endereco_hospedagem = row.get('endereco')
-            diaria = row.get('diaria')
-            dias = row.get('dias')
-            observacoes_hospedagem = row.get('obs')
-
-            descricao_servico = row.get('descricao')
-            valor_total_servicos = row.get('valor_total_servicos')
-            observacoes_servico = row.get('obs_servicos')
-
-            
-            # Clear inputs first to prevent stale values
-            edit_inputs['id_produto'].value = None
-            edit_inputs['nome_produto'].value = None
-            edit_inputs['tipo'].value = None
-            edit_inputs['pais'].value = None
-            edit_inputs['cidade'].value = None
-            edit_inputs['valor_minimo'].value = None
-            edit_inputs['id_cliente'].value = None
-
-            edit_inputs['pais_saida_ida'].value = None
-            edit_inputs['cidade_saida_ida'].value = None
-            edit_inputs['aeroporto_saida_ida'].value = None
-            edit_inputs['data_saida_ida'].value = None
-            edit_inputs['hora_saida_ida'].value = None
-            edit_inputs['pais_destino_ida'].value = None
-            edit_inputs['cidade_destino_ida'].value = None
-            edit_inputs['aeroporto_destino_ida'].value = None
-            edit_inputs['data_chegada_ida'].value = None
-            edit_inputs['hora_chegada_ida'].value = None
-            edit_inputs['valor_passagem_ida'].value = None
-            edit_inputs['id_companhia_ida'].value = None
-            edit_inputs['obs_ida'].value = None
-            edit_inputs['qtd_passagens_ida'].value = None
-
-            edit_inputs['pais_saida_volta'].value = None
-            edit_inputs['cidade_saida_volta'].value = None
-            edit_inputs['aeroporto_saida_volta'].value = None
-            edit_inputs['data_saida_volta'].value = None
-            edit_inputs['hora_saida_volta'].value = None
-            edit_inputs['pais_destino_volta'].value = None
-            edit_inputs['cidade_destino_volta'].value = None
-            edit_inputs['aeroporto_destino_volta'].value = None
-            edit_inputs['data_chegada_volta'].value = None
-            edit_inputs['hora_chegada_volta'].value = None
-            edit_inputs['valor_passagem_volta'].value = None
-            edit_inputs['id_companhia_volta'].value = None
-            edit_inputs['obs_volta'].value = None
-            edit_inputs['qtd_passagens_volta'].value = None
-
-            edit_inputs['endereco_hospedagem_input'].value = None
-            edit_inputs['diaria_input'].value = None
-            edit_inputs['dias_input'].value = None
-            edit_inputs['observacoes_hospedagem_input'].value = None
-
-            edit_inputs['descricao_servico_input'].value = None
-            edit_inputs['valor_total_servicos_input'].value = None
-            edit_inputs['observacoes_servico_input'].value = None
-
-            edit_dialog.open()
-
-            produtos = db_connection.get_produtos()
-            clientes = db_connection.get_clientes()
-            companhias = db_connection.get_companhias()
-
-            voos = db_connection.get_voos_w_id(selected_rows[0]['id_orcamento'])
-            data = None
-            for row in voos:
-                if row['ida_volta'] == 'Ida':
-                    data = row
-                    break
-
-            pais_saida_ida = data['pais_saida']
-            pais_saida_ida_nome = data['pais_saida_nome']
-            cidade_saida_ida = data['cidade_saida']
-            cidade_saida_ida_nome = data['cidade_saida_nome']
-
-            aeroporto_saida_ida = data['aeroporto_saida']
-
-            pais_destino_ida = data['pais_destino']
-            pais_destino_ida_nome = data['pais_destino_nome']
-            cidade_destino_ida = data['cidade_destino']
-            cidade_destino_ida_nome = data['cidade_destino_nome']
-
-            aeroporto_destino_ida = data['aeroporto_destino']
-
-            valor_passagem_ida = data['valor_passagem']
-            qtd_passagens_ida = data['qtd_passagens']
-            observacoes_ida = data['obs']
-            id_companhia_ida = data['id_companhia']
+        
+        def on_selection_change_edit(event):
+            selected_id = event.value
+            if selected_id is None:
+                return
 
             data = None
-            for row in voos:
-                if row['ida_volta'] == 'Volta':
+            orcamentos = db_connection.get_produtos()
+            
+            for row in orcamentos:
+                if row['id_produto'] == selected_id:
                     data = row
                     break
-
-            pais_saida_volta = data['pais_saida']
-            pais_saida_volta_nome = data['pais_saida_nome']
-            cidade_saida_volta = data['cidade_saida']
-            cidade_saida_volta_nome = data['cidade_saida_nome']   
-
-            aeroporto_saida_volta = data['aeroporto_saida']
-
-            pais_destino_volta = data['pais_destino']
-            pais_destino_volta_nome = data['pais_destino_nome']
-            cidade_destino_volta = data['cidade_destino']
-            cidade_destino_volta_nome = data['cidade_destino_nome']
-
-            aeroporto_destino_volta = data['aeroporto_destino']
-
-            valor_passagem_volta = data['valor_passagem']
-            qtd_passagens_volta = data['qtd_passagens']
-            observacoes_volta = data['obs']
-            id_companhia_volta = data['id_companhia']
-
-            edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}               
-            edit_inputs['id_cliente'].options = {c['id_cliente']: f"{c['nome']}" for c in clientes} if clientes else {}
-            edit_inputs['id_companhia_ida'].options = {c['id_companhia']: f"{c['nome_companhia']}" for c in companhias} if companhias else {}
-            edit_inputs['id_companhia_volta'].options = {c['id_companhia']: f"{c['nome_companhia']}" for c in companhias} if companhias else {}
-
-            edit_inputs['pais_saida_ida'].options = {pais_saida_ida: pais_saida_ida_nome} if data else {}
-            edit_inputs['cidade_saida_ida'].options = {cidade_saida_ida: cidade_saida_ida_nome} if data else {}
-
-            edit_inputs['pais_destino_ida'].options = {pais_destino_ida: pais_destino_ida_nome} if data else {}
-            edit_inputs['cidade_destino_ida'].options = {cidade_destino_ida: cidade_destino_ida_nome} if data else {}
-
-            edit_inputs['pais_saida_volta'].options = {pais_saida_volta: pais_saida_volta_nome} if data else {}
-            edit_inputs['cidade_saida_volta'].options = {cidade_saida_volta: cidade_saida_volta_nome} if data else {}
-
-            edit_inputs['pais_destino_volta'].options = {pais_destino_volta: pais_destino_volta_nome} if data else {}
-            edit_inputs['cidade_destino_volta'].options = {cidade_destino_volta: cidade_destino_volta_nome} if data else {}
-
-
-            # Set options before setting values
             
-            # Use timer to ensure dialog renders before setting values
-            ui.timer(0.05, lambda p=id_produto,
-                    n=nome_produto,
-                    t=tipo,
-                    pa=pais,
-                    ci=cidade,
-                    vm=valor_minimo,
-                    c=id_cliente,
-                    vt=valor_total,
+            if data is None:
+                return  # No match found
+            notify(data['id_produto'], type='info')
+            notify(f"ID do Produto selecionado: {data['id_produto']}", type='success')
+            edit_inputs['id_produto'].set_value(data['id_produto'])
+            edit_inputs['pais'].set_value(data['pais'])
+            edit_inputs['cidade'].set_value(data['cidade'])
+            edit_inputs['tipo'].set_value(data['tipo'])
+            edit_inputs['valor_minimo'].set_value(data['valor_minimo'])
+                
 
-                    p_s_ida=pais_saida_ida,
-                    c_s_ida=cidade_saida_ida,
-                    a_s_ida=aeroporto_saida_ida,
-                    p_dest_ida=pais_destino_ida,
-                    c_dest_ida=cidade_destino_ida,
-                    a_dest_ida=aeroporto_destino_ida,
-                    vp_ida=valor_passagem_ida,
-                    qtd_ida=qtd_passagens_ida,
-                    i_comp_ida=id_companhia_ida,
-                    obs_ida=observacoes_ida,
+        with ui.dialog() as edit_dialog, ui.card().classes('w-320').style('padding: 20px'):
 
-                    p_s_volta=pais_saida_volta,
-                    c_s_volta=cidade_saida_volta,
-                    a_s_volta=aeroporto_saida_volta,
-                    p_dest_volta=pais_destino_volta,
-                    c_dest_volta=cidade_destino_volta,
-                    a_dest_volta=aeroporto_destino_volta,
-                    vp_volta=valor_passagem_volta,
-                    qtd_volta=qtd_passagens_volta,
-                    i_comp_volta=id_companhia_volta,
-                    obs_volta=observacoes_volta,
+            async def on_filter_pais(e, ida_volta):
+                # notify(e.args, type='info')
+                search_term = e.args[0]
 
-                    endereco_hospedagem=endereco_hospedagem,
-                    diaria=diaria,
-                    qtd_dias=dias,
-                    obs_hospedagem=observacoes_hospedagem,
+                # Fetch filtered data
 
-                    descricao_servico=descricao_servico,
-                    valor_total_servicos=valor_total_servicos,
-                    obs_servicos=observacoes_servico,
+                filtered_options = db_connection.search_database_paises(search_term)
+                
+                # Update the UI options dynamically
 
-                    :
-                    (
-                edit_inputs['id_produto'].set_value(p),
-                edit_inputs['nome_produto'].set_value(p),
-                edit_inputs['tipo'].set_value(t),
-                edit_inputs['pais'].set_value(pa),
-                edit_inputs['cidade'].set_value(ci),
-                edit_inputs['valor_minimo'].set_value(vm),
-                edit_inputs['id_cliente'].set_value(c),
+                if ida_volta == 'ida/saida':
+                    edit_inputs['pais_saida_ida'].options = filtered_options
+                    edit_inputs['pais_saida_ida'].update()
+                    edit_inputs['cidade_saida_ida'].value = None
+                    edit_inputs['cidade_saida_ida'].options = []
 
-                edit_inputs['pais_saida_ida'].set_value(p_s_ida),
-                edit_inputs['cidade_saida_ida'].set_value(c_s_ida),
-                edit_inputs['aeroporto_saida_ida'].set_value(a_s_ida),
-                edit_inputs['pais_destino_ida'].set_value(p_dest_ida),
-                edit_inputs['cidade_destino_ida'].set_value(c_dest_ida),
-                edit_inputs['aeroporto_destino_ida'].set_value(a_dest_ida),
-                edit_inputs['valor_passagem_ida'].set_value(vp_ida),
-                edit_inputs['id_companhia_ida'].set_value(i_comp_ida),
-                edit_inputs['obs_ida'].set_value(obs_ida),
-                edit_inputs['qtd_passagens_ida'].set_value(qtd_ida),
+                elif ida_volta == 'ida/destino':
+                    edit_inputs['pais_destino_ida'].options = filtered_options
+                    edit_inputs['pais_destino_ida'].update()
+                    edit_inputs['cidade_destino_ida'].value = None
+                    edit_inputs['cidade_destino_ida'].options = []
 
-                edit_inputs['pais_saida_volta'].set_value(p_s_volta),
-                edit_inputs['cidade_saida_volta'].set_value(c_s_volta),
-                edit_inputs['aeroporto_saida_volta'].set_value(a_s_volta),
-                edit_inputs['pais_destino_volta'].set_value(p_dest_volta),
-                edit_inputs['cidade_destino_volta'].set_value(c_dest_volta),
-                edit_inputs['aeroporto_destino_volta'].set_value(a_dest_volta),
-                edit_inputs['valor_passagem_volta'].set_value(vp_volta),
-                edit_inputs['id_companhia_volta'].set_value(i_comp_volta),
-                edit_inputs['obs_volta'].set_value(obs_volta),
-                edit_inputs['qtd_passagens_volta'].set_value(qtd_volta),
+                elif ida_volta == 'volta/saida':    
+                    edit_inputs['pais_saida_volta'].options = filtered_options
+                    edit_inputs['pais_saida_volta'].update()
+                    edit_inputs['cidade_saida_volta'].value = None
+                    edit_inputs['cidade_saida_volta'].options = []
 
-                edit_inputs['endereco_hospedagem_input'].set_value(endereco_hospedagem),
-                edit_inputs['diaria_input'].set_value(diaria),
-                edit_inputs['dias_input'].set_value(dias),
-                edit_inputs['observacoes_hospedagem_input'].set_value(observacoes_hospedagem),
-
-                edit_inputs['descricao_servico_input'].set_value(descricao_servico),
-                edit_inputs['valor_total_servicos_input'].set_value(valor_total_servicos),
-                edit_inputs['observacoes_servico_input'].set_value(observacoes_servico),
-
-                edit_inputs['valor_total_input'].set_value(vt)
-
-            ), once=True)
-    
-    grid.on('cellClicked', on_row_selected)
-    
-    def on_selection_change_edit(event):
-        selected_id = event.value
-        if selected_id is None:
-            return
-
-        data = None
-        orcamentos = db_connection.get_produtos()
-        
-        for row in orcamentos:
-            if row['id_produto'] == selected_id:
-                data = row
-                break
-        
-        if data is None:
-            return  # No match found
-        notify(data['id_produto'], type='info')
-        notify(f"ID do Produto selecionado: {data['id_produto']}", type='success')
-        edit_inputs['id_produto'].set_value(data['id_produto'])
-        edit_inputs['pais'].set_value(data['pais'])
-        edit_inputs['cidade'].set_value(data['cidade'])
-        edit_inputs['tipo'].set_value(data['tipo'])
-        edit_inputs['valor_minimo'].set_value(data['valor_minimo'])
+                elif ida_volta == 'volta/destino':
+                    edit_inputs['pais_destino_volta'].options = filtered_options
+                    edit_inputs['pais_destino_volta'].update()
+                    edit_inputs['cidade_destino_volta'].value = None
+                    edit_inputs['cidade_destino_volta'].options = []
             
+            async def on_filter_cidade(e, ida_volta):
+                # notify(e.args, type='info')
+                search_term = e.args[0]
+                
+                # Fetch filtered data
 
-    with ui.dialog() as edit_dialog, ui.card().classes('w-320').style('padding: 20px'):
+                if ida_volta == 'ida/saida':
+                    filtered_options_ida = db_connection.search_database_cidades(search_term, edit_inputs['pais_saida_ida'].value)
+                    edit_inputs['cidade_saida_ida'].options = filtered_options_ida
+                    edit_inputs['cidade_saida_ida'].update()
 
-        async def on_filter_pais(e, ida_volta):
-            # notify(e.args, type='info')
-            search_term = e.args[0]
+                elif ida_volta == 'ida/destino':
+                    filtered_options_ida = db_connection.search_database_cidades(search_term, edit_inputs['pais_destino_ida'].value)
+                    edit_inputs['cidade_destino_ida'].options = filtered_options_ida
+                    edit_inputs['cidade_destino_ida'].update()
 
-            # Fetch filtered data
+                elif ida_volta == 'volta/saida':
+                    filtered_options_volta = db_connection.search_database_cidades(search_term, edit_inputs['pais_saida_volta'].value)
+                    edit_inputs['cidade_saida_volta'].options = filtered_options_volta
+                    edit_inputs['cidade_saida_volta'].update()
 
-            filtered_options = db_connection.search_database_paises(search_term)
-            
-            # Update the UI options dynamically
+                elif ida_volta == 'volta/destino':
+                    filtered_options_volta = db_connection.search_database_cidades(search_term, edit_inputs['pais_destino_volta'].value)
+                    edit_inputs['cidade_destino_volta'].options = filtered_options_volta
+                    edit_inputs['cidade_destino_volta'].update()
 
-            if ida_volta == 'ida/saida':
-                edit_inputs['pais_saida_ida'].options = filtered_options
-                edit_inputs['pais_saida_ida'].update()
-                edit_inputs['cidade_saida_ida'].value = None
-                edit_inputs['cidade_saida_ida'].options = []
+            ui.label('Editar Orçamento').classes('text-lg font-bold mb-4')
+            with ui.row().classes("w-full no-wrap"):
+                with ui.column().classes("w-1/2 no-wrap"):
+                    with ui.card().classes("w-full"):
+                        with ui.row().classes('gap-2 w-full'):
+                                ui.label('Produto').classes('text-lg font-medium mb-1')
+                                edit_inputs['nome_produto'] = ui.select([], label='Selecione o produto', with_input=True,on_change=on_selection_change_edit).classes('w-full rounded-md').props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left" popup-content-style="text-align: left;" menu-class="left-align-menu"')
+                                edit_inputs['id_produto'] = ui.input(label='ID do produto', placeholder='ID').classes('hidden').props('readonly')
+                        with ui.row().classes("w-full no-wrap"):
+                            with ui.column().classes('w-1/2'):
+                                ui.label('Tipo do produto').classes('text-sm font-medium mb-1')
+                                edit_inputs['tipo'] = ui.input(label='Tipo do produto', placeholder='Tipo').classes('w-full').props('readonly')
+                            with ui.column().classes('w-1/2'):
+                                ui.label('País').classes('text-sm font-medium mb-1')
+                                edit_inputs['pais'] = ui.input(label='País', placeholder='País').classes('w-full').props('readonly')
+                        with ui.row().classes("w-full no-wrap"):
+                            with ui.column().classes('w-1/2'):
+                                ui.label('Cidade').classes('text-sm font-medium mb-1')
+                                edit_inputs['cidade'] = ui.input(label='Cidade', placeholder='Cidade').classes('w-full').props('readonly')
+                            with ui.column().classes('w-1/2'):
+                                ui.label('Preço mínimo').classes('text-sm font-medium mb-1')
+                                edit_inputs['valor_minimo'] = ui.number(label='Preço mínimo', placeholder='0.00', min=0, format='%.2f').props('readonly prefix=R$').classes('w-full')
+                                
 
-            elif ida_volta == 'ida/destino':
-                edit_inputs['pais_destino_ida'].options = filtered_options
-                edit_inputs['pais_destino_ida'].update()
-                edit_inputs['cidade_destino_ida'].value = None
-                edit_inputs['cidade_destino_ida'].options = []
+                    with ui.card().classes("w-full"):
+                        with ui.row().classes('w-full no-wrap'):
+                            ui.label('Voo').classes('text-lg font-medium mb-1')
+                            ui.icon('flight', color="#DFDFDF", size="md").classes('ml-auto justify-self-end h-full')
+                            edit_inputs['id_voo'] = ui.input(label='ID do voo', placeholder='ID').classes('hidden').props('readonly')
 
-            elif ida_volta == 'volta/saida':    
-                edit_inputs['pais_saida_volta'].options = filtered_options
-                edit_inputs['pais_saida_volta'].update()
-                edit_inputs['cidade_saida_volta'].value = None
-                edit_inputs['cidade_saida_volta'].options = []
-
-            elif ida_volta == 'volta/destino':
-                edit_inputs['pais_destino_volta'].options = filtered_options
-                edit_inputs['pais_destino_volta'].update()
-                edit_inputs['cidade_destino_volta'].value = None
-                edit_inputs['cidade_destino_volta'].options = []
-        
-        async def on_filter_cidade(e, ida_volta):
-            # notify(e.args, type='info')
-            search_term = e.args[0]
-            
-            # Fetch filtered data
-
-            if ida_volta == 'ida/saida':
-                filtered_options_ida = db_connection.search_database_cidades(search_term, edit_inputs['pais_saida_ida'].value)
-                edit_inputs['cidade_saida_ida'].options = filtered_options_ida
-                edit_inputs['cidade_saida_ida'].update()
-
-            elif ida_volta == 'ida/destino':
-                filtered_options_ida = db_connection.search_database_cidades(search_term, edit_inputs['pais_destino_ida'].value)
-                edit_inputs['cidade_destino_ida'].options = filtered_options_ida
-                edit_inputs['cidade_destino_ida'].update()
-
-            elif ida_volta == 'volta/saida':
-                filtered_options_volta = db_connection.search_database_cidades(search_term, edit_inputs['pais_saida_volta'].value)
-                edit_inputs['cidade_saida_volta'].options = filtered_options_volta
-                edit_inputs['cidade_saida_volta'].update()
-
-            elif ida_volta == 'volta/destino':
-                filtered_options_volta = db_connection.search_database_cidades(search_term, edit_inputs['pais_destino_volta'].value)
-                edit_inputs['cidade_destino_volta'].options = filtered_options_volta
-                edit_inputs['cidade_destino_volta'].update()
-
-        ui.label('Editar Orçamento').classes('text-lg font-bold mb-4')
-        with ui.row().classes("w-full no-wrap"):
-            with ui.column().classes("w-1/2 no-wrap"):
-                with ui.card().classes("w-full"):
-                    with ui.row().classes('gap-2 w-full'):
-                            ui.label('Produto').classes('text-lg font-medium mb-1')
-                            edit_inputs['nome_produto'] = ui.select([], label='Selecione o produto', with_input=True,on_change=on_selection_change_edit).classes('w-full rounded-md').props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left" popup-content-style="text-align: left;" menu-class="left-align-menu"')
-                            edit_inputs['id_produto'] = ui.input(label='ID do produto', placeholder='ID').classes('hidden').props('readonly')
-                    with ui.row().classes("w-full no-wrap"):
-                        with ui.column().classes('w-1/2'):
-                            ui.label('Tipo do produto').classes('text-sm font-medium mb-1')
-                            edit_inputs['tipo'] = ui.input(label='Tipo do produto', placeholder='Tipo').classes('w-full').props('readonly')
-                        with ui.column().classes('w-1/2'):
-                            ui.label('País').classes('text-sm font-medium mb-1')
-                            edit_inputs['pais'] = ui.input(label='País', placeholder='País').classes('w-full').props('readonly')
-                    with ui.row().classes("w-full no-wrap"):
-                        with ui.column().classes('w-1/2'):
-                            ui.label('Cidade').classes('text-sm font-medium mb-1')
-                            edit_inputs['cidade'] = ui.input(label='Cidade', placeholder='Cidade').classes('w-full').props('readonly')
-                        with ui.column().classes('w-1/2'):
-                            ui.label('Preço mínimo').classes('text-sm font-medium mb-1')
-                            edit_inputs['valor_minimo'] = ui.number(label='Preço mínimo', placeholder='0.00', min=0, format='%.2f').props('readonly prefix=R$').classes('w-full')
+                    #---------------------------------------Ida---------------------------------------#
                             
+                        with ui.expansion('Ida', icon='flight').classes('w-full no-wrap'):
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Saída').classes('text-medium font-medium mb-1')
+                            ui.separator()        
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('País de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Cidade de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Aeroporto de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['pais_saida_ida'] = ui.select([], label='País de saída',with_input=True).on('filter', lambda e: on_filter_pais(e, 'ida/saida')).classes('w-1/3 rounded-md').props('outlined')
+                                edit_inputs['cidade_saida_ida'] = ui.select([], label='Cidade de saída',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'ida/saida')).classes('w-1/3 rounded-md').props('outlined')
+                                edit_inputs['aeroporto_saida_ida'] = ui.input(label='Aeroporto de saída', placeholder='Aeroporto de saída').classes('w-full rounded-md').classes('w-1/3 rounded-md').props('outlined')
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Data de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                                ui.label('Horário de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['data_saida_ida'] = ui.date_input(label='Data de saída', placeholder='Data de saída').classes('w-1/4 rounded-md').props('outlined')
+                                edit_inputs['hora_saida_ida'] = ui.time_input(label='Horário de saída', placeholder='Horário de saída').classes('w-1/4 rounded-md').props('outlined')
+                                dt_hr_saida = f'{edit_inputs['data_saida_ida'].value}T{edit_inputs["hora_saida_ida"].value}:00' if edit_inputs['data_saida_ida'].value and edit_inputs["hora_saida_ida"].value else None
+                            ui.space()
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Chegada').classes('text-medium font-medium mb-1')
+                            ui.separator()
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('País de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Cidade de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Aeroporto de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['pais_destino_ida'] = ui.select([], label='País de saída',with_input=True).on('filter', lambda e: on_filter_pais(e, 'ida/destino')).classes('w-1/3 rounded-md').props('outlined')
+                                edit_inputs['cidade_destino_ida'] = ui.select([], label='Cidade de destino',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'ida/destino')).classes('w-1/3 rounded-md').props('outlined')
+                                edit_inputs['aeroporto_destino_ida'] = ui.input(label='Aeroporto de destino', placeholder='Aeroporto de destino').classes('w-1/3 rounded-md').props('outlined')
+                            with ui.row().classes('w-full no-wrap'):
+                                ui.label('Data de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                                ui.label('Horário de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['data_chegada_ida'] = ui.date_input(label='Data de chegada', placeholder='Data de chegada').classes('w-1/4 rounded-md').props('outlined') 
+                                edit_inputs['hora_chegada_ida'] = ui.time_input(label='Horário de chegada', placeholder='Horário de chegada').classes('w-1/4 rounded-md').props('format24h outlined')
+                            
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Companhia aérea').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                                ui.label('Valor da passagem').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['id_companhia_ida'] = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
+                                edit_inputs['valor_passagem_ida'] = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f',on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-1/3 rounded-md')
+                            with ui.row().classes('w-full no-wrap'):
+                                ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['qtd_passagens_ida'] = ui.number(label='Qtd. de passagens', placeholder='0', min=0, on_change=on_value_change_edit).props('outlined').classes('w-1/3 rounded-md')
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                            with ui.row().classes("w-full no-wrap"):    
+                                edit_inputs['obs_ida'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')
 
-                with ui.card().classes("w-full"):
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Voo').classes('text-lg font-medium mb-1')
-                        ui.icon('flight', color="#DFDFDF", size="md").classes('ml-auto justify-self-end h-full')
-                        edit_inputs['id_voo'] = ui.input(label='ID do voo', placeholder='ID').classes('hidden').props('readonly')
+                #--------------------------------------Volta---------------------------------------#
 
-                #---------------------------------------Ida---------------------------------------#
+                        with ui.expansion('Volta', icon='flight').classes('w-full no-wrap'):
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Saída').classes('text-medium font-medium mb-1')
+                            ui.separator()        
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('País de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Cidade de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Aeroporto de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['pais_saida_volta'] = ui.select([], label='País de saída',with_input=True).on('filter', lambda e: on_filter_pais(e, 'volta/saida')).classes('w-full rounded-md').props('outlined')
+                                edit_inputs['cidade_saida_volta'] = ui.select([], label='Cidade de saída',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'volta/saida')).classes('w-full rounded-md').props('outlined')
+                                edit_inputs['aeroporto_saida_volta'] = ui.input(label='Aeroporto de saída', placeholder='Aeroporto de saída').classes('w-full rounded-md').props('outlined')
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Data de saída').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                                ui.label('Horário de saída').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['data_saida_volta'] = ui.date_input(label='Data de saída', placeholder='Data de saída').classes('w-2/4 rounded-md').props('outlined')
+                                edit_inputs['hora_saida_volta'] = ui.time_input(label='Horário de saída', placeholder='Horário de saída').classes('w-2/4 rounded-md').props('outlined')
+                                edit_inputs['dt_hr_saida'] = f'{edit_inputs["data_saida_volta"].value}T{edit_inputs["hora_saida_volta"].value}:00' if edit_inputs["data_saida_volta"].value and edit_inputs["hora_saida_volta"].value else None
+                            ui.space()
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Chegada').classes('text-medium font-medium mb-1')
+                            ui.separator()
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('País de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Cidade de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                                ui.label('Aeroporto de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['pais_destino_volta'] = ui.select([], label='País de destino',with_input=True).on('filter', lambda e: on_filter_pais(e, 'volta/chegada')).classes('w-1/3 rounded-md').props('outlined')
+                                edit_inputs['cidade_destino_volta'] = ui.select([], label='Cidade de destino',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'volta/chegada')).classes('w-1/3 rounded-md').props('outlined')
+                                edit_inputs['aeroporto_destino_volta'] = ui.input(label='Aeroporto de destino', placeholder='Aeroporto de destino').classes('w-1/3 rounded-md').props('outlined')
+                            with ui.row().classes('w-full no-wrap'):
+                                ui.label('Data de chegada').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                                ui.label('Horário de chegada').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['data_chegada_volta'] = ui.date_input(label='Data de chegada', placeholder='Data de chegada').classes('w-2/4 rounded-md').props('outlined') 
+                                edit_inputs['hora_chegada_volta'] = ui.time_input(label='Horário de chegada', placeholder='Horário de chegada').classes('w-2/4 rounded-md').props('format24h outlined')
+                                edit_inputs['dt_hr_chegada_volta'] = f'{edit_inputs["data_chegada_volta"].value}T{edit_inputs["hora_chegada_volta"].value}:00' if edit_inputs["data_chegada_volta"].value and edit_inputs["hora_chegada_volta"].value else None
+                                
+
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Companhia aérea').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                                ui.label('Valor da passagem').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['id_companhia_volta'] = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
+                                edit_inputs['valor_passagem_volta'] = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f',on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-1/3 rounded-md')
+                            with ui.row().classes('w-full no-wrap'):
+                                ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            with ui.row().classes('w-full no-wrap'):
+                                edit_inputs['qtd_passagens_volta'] = ui.number(label='Qtd. de passagens', placeholder='0', min=0, on_change=on_value_change_edit).props('outlined').classes('w-1/3 rounded-md')
+                            with ui.row().classes("w-full no-wrap"):
+                                ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                            with ui.row().classes("w-full no-wrap"):    
+                                edit_inputs['obs_volta'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')
                         
-                    with ui.expansion('Ida', icon='flight').classes('w-full no-wrap'):
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Saída').classes('text-medium font-medium mb-1')
-                        ui.separator()        
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('País de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Cidade de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Aeroporto de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                    
+    #              ────────Cliente─────────────────────
+
+                with ui.column().classes("w-1/2 no-wrap"):
+                    with ui.card().classes("w-full"):
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['pais_saida_ida'] = ui.select([], label='País de saída',with_input=True).on('filter', lambda e: on_filter_pais(e, 'ida/saida')).classes('w-1/3 rounded-md').props('outlined')
-                            edit_inputs['cidade_saida_ida'] = ui.select([], label='Cidade de saída',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'ida/saida')).classes('w-1/3 rounded-md').props('outlined')
-                            edit_inputs['aeroporto_saida_ida'] = ui.input(label='Aeroporto de saída', placeholder='Aeroporto de saída').classes('w-full rounded-md').classes('w-1/3 rounded-md').props('outlined')
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Data de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
-                            ui.label('Horário de saída').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                            ui.label('Cliente').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['data_saida_ida'] = ui.date_input(label='Data de saída', placeholder='Data de saída').classes('w-1/4 rounded-md').props('outlined')
-                            edit_inputs['hora_saida_ida'] = ui.time_input(label='Horário de saída', placeholder='Horário de saída').classes('w-1/4 rounded-md').props('outlined')
-                            dt_hr_saida = f'{edit_inputs['data_saida_ida'].value}T{edit_inputs["hora_saida_ida"].value}:00' if edit_inputs['data_saida_ida'].value and edit_inputs["hora_saida_ida"].value else None
-                        ui.space()
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Chegada').classes('text-medium font-medium mb-1')
-                        ui.separator()
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('País de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Cidade de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Aeroporto de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            edit_inputs['id_cliente'] = ui.select([], label='Selecione o cliente', with_input=True).classes('w-2/3 rounded-md').props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"')
+                            ui.button('Novo cliente', on_click=lambda: adicionar_cliente.open()).classes('button button-secodary rounded-md h-full')
+
+    #              ────────Hospedagem─────────────────────  
+                
+                    with ui.card().classes("w-full"):
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['pais_destino_ida'] = ui.select([], label='País de saída',with_input=True).on('filter', lambda e: on_filter_pais(e, 'ida/destino')).classes('w-1/3 rounded-md').props('outlined')
-                            edit_inputs['cidade_destino_ida'] = ui.select([], label='Cidade de destino',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'ida/destino')).classes('w-1/3 rounded-md').props('outlined')
-                            edit_inputs['aeroporto_destino_ida'] = ui.input(label='Aeroporto de destino', placeholder='Aeroporto de destino').classes('w-1/3 rounded-md').props('outlined')
+                            ui.label('Hospedagem').classes('text-lg font-medium mb-1 w-2/3 align-self-start')
                         with ui.row().classes('w-full no-wrap'):
-                            ui.label('Data de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
-                            ui.label('Horário de chegada').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                            ui.label('Endereço').classes('text-sm font-medium mb-1')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['data_chegada_ida'] = ui.date_input(label='Data de chegada', placeholder='Data de chegada').classes('w-1/4 rounded-md').props('outlined') 
-                            edit_inputs['hora_chegada_ida'] = ui.time_input(label='Horário de chegada', placeholder='Horário de chegada').classes('w-1/4 rounded-md').props('format24h outlined')
-                        
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Companhia aérea').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                            ui.label('Valor da passagem').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            edit_inputs['endereco_hospedagem_input'] = ui.input(label='Endereço', placeholder='Endereço').classes('w-full rounded-md').props('outlined')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['id_companhia_ida'] = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
-                            edit_inputs['valor_passagem_ida'] = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f',on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-1/3 rounded-md')
+                            ui.label('Diária').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
+                            ui.label('Dias').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
                         with ui.row().classes('w-full no-wrap'):
-                            ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            edit_inputs['diaria_input'] = ui.number(label='Diária', placeholder='0.00', min=0, format='%.2f', on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-2/3 rounded-md')
+                            edit_inputs['dias_input'] = ui.number(label='Dias', placeholder='0', min=0, on_change=on_value_change_edit).props('outlined').classes('w-1/3 rounded-md')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['qtd_passagens_ida'] = ui.number(label='Qtd. de passagens', placeholder='0', min=0, on_change=on_value_change_edit).props('outlined').classes('w-1/3 rounded-md')
-                        with ui.row().classes("w-full no-wrap"):
                             ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                         with ui.row().classes("w-full no-wrap"):    
-                            edit_inputs['obs_ida'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')
+                            edit_inputs['observacoes_hospedagem_input'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-40 filled input-style="resize: none"')
 
-            #--------------------------------------Volta---------------------------------------#
+    #              ────────Serviços───────────────────── 
 
-                    with ui.expansion('Volta', icon='flight').classes('w-full no-wrap'):
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Saída').classes('text-medium font-medium mb-1')
-                        ui.separator()        
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('País de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Cidade de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Aeroporto de saída').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                    with ui.card().classes("w-full"):
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['pais_saida_volta'] = ui.select([], label='País de saída',with_input=True).on('filter', lambda e: on_filter_pais(e, 'volta/saida')).classes('w-full rounded-md').props('outlined')
-                            edit_inputs['cidade_saida_volta'] = ui.select([], label='Cidade de saída',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'volta/saida')).classes('w-full rounded-md').props('outlined')
-                            edit_inputs['aeroporto_saida_volta'] = ui.input(label='Aeroporto de saída', placeholder='Aeroporto de saída').classes('w-full rounded-md').props('outlined')
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Data de saída').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
-                            ui.label('Horário de saída').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                            ui.label('Serviços').classes('text-lg font-medium mb-1 w-2/3 align-self-start')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['data_saida_volta'] = ui.date_input(label='Data de saída', placeholder='Data de saída').classes('w-2/4 rounded-md').props('outlined')
-                            edit_inputs['hora_saida_volta'] = ui.time_input(label='Horário de saída', placeholder='Horário de saída').classes('w-2/4 rounded-md').props('outlined')
-                            edit_inputs['dt_hr_saida'] = f'{edit_inputs["data_saida_volta"].value}T{edit_inputs["hora_saida_volta"].value}:00' if edit_inputs["data_saida_volta"].value and edit_inputs["hora_saida_volta"].value else None
-                        ui.space()
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Chegada').classes('text-medium font-medium mb-1')
-                        ui.separator()
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('País de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Cidade de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                            ui.label('Aeroporto de destino').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            ui.label('Descrição').classes('text-sm font-medium mb-1')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['pais_destino_volta'] = ui.select([], label='País de destino',with_input=True).on('filter', lambda e: on_filter_pais(e, 'volta/chegada')).classes('w-1/3 rounded-md').props('outlined')
-                            edit_inputs['cidade_destino_volta'] = ui.select([], label='Cidade de destino',with_input=True).on('filter', lambda e: on_filter_cidade(e, 'volta/chegada')).classes('w-1/3 rounded-md').props('outlined')
-                            edit_inputs['aeroporto_destino_volta'] = ui.input(label='Aeroporto de destino', placeholder='Aeroporto de destino').classes('w-1/3 rounded-md').props('outlined')
+                            edit_inputs['descricao_servico_input'] = ui.input(label='Descrição do serviço').classes('w-full rounded-md').props('outlined')
                         with ui.row().classes('w-full no-wrap'):
-                            ui.label('Data de chegada').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
-                            ui.label('Horário de chegada').classes('text-sm font-medium mb-1 w-2/4 align-self-start')
+                            ui.label('Valor total dos serviços').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['data_chegada_volta'] = ui.date_input(label='Data de chegada', placeholder='Data de chegada').classes('w-2/4 rounded-md').props('outlined') 
-                            edit_inputs['hora_chegada_volta'] = ui.time_input(label='Horário de chegada', placeholder='Horário de chegada').classes('w-2/4 rounded-md').props('format24h outlined')
-                            edit_inputs['dt_hr_chegada_volta'] = f'{edit_inputs["data_chegada_volta"].value}T{edit_inputs["hora_chegada_volta"].value}:00' if edit_inputs["data_chegada_volta"].value and edit_inputs["hora_chegada_volta"].value else None
-                            
-
-                        with ui.row().classes("w-full no-wrap"):
-                            ui.label('Companhia aérea').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                            ui.label('Valor da passagem').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
+                            edit_inputs['valor_total_servicos_input'] = ui.number(label='Valor total dos serviços', placeholder='0.00', min=0, format='%.2f', on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-2/3 rounded-md')
                         with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['id_companhia_volta'] = ui.select([], label='Selecione a companhia aérea', with_input=True).props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"').classes('w-2/3 rounded-md')
-                            edit_inputs['valor_passagem_volta'] = ui.number(label='Valor da passagem', placeholder='0.00', min=0, format='%.2f',on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-1/3 rounded-md')
-                        with ui.row().classes('w-full no-wrap'):
-                            ui.label('Qtd. de passagens').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                        with ui.row().classes('w-full no-wrap'):
-                            edit_inputs['qtd_passagens_volta'] = ui.number(label='Qtd. de passagens', placeholder='0', min=0, on_change=on_value_change_edit).props('outlined').classes('w-1/3 rounded-md')
-                        with ui.row().classes("w-full no-wrap"):
                             ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                         with ui.row().classes("w-full no-wrap"):    
-                            edit_inputs['obs_volta'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')
+                            edit_inputs['observacoes_servico_input'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-40 filled input-style="resize: none"')
+
+            #              ─────────Total─────────────────────────
+
+                    with ui.card().classes("w-full"):
+                        with ui.row().classes('gap-2 w-full'):
+                            with ui.column().classes("w-full"):
+                                ui.label('Valor Total').classes('text-sm font-medium mb-1')
+                                edit_inputs['valor_total_input'] = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$ outlined readonly').classes('w-full rounded-md')
+
                     
-                
-#              ────────Cliente─────────────────────
-
-            with ui.column().classes("w-1/2 no-wrap"):
-                with ui.card().classes("w-full"):
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Cliente').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        edit_inputs['id_cliente'] = ui.select([], label='Selecione o cliente', with_input=True).classes('w-2/3 rounded-md').props('hide-selected outlined input-class="text-left" menu-anchor="bottom left" menu-self="top left"')
-                        ui.button('Novo cliente', on_click=lambda: adicionar_cliente.open()).classes('button button-secodary rounded-md h-full')
-
-#              ────────Hospedagem─────────────────────  
-             
-                with ui.card().classes("w-full"):
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Hospedagem').classes('text-lg font-medium mb-1 w-2/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Endereço').classes('text-sm font-medium mb-1')
-                    with ui.row().classes('w-full no-wrap'):
-                        edit_inputs['endereco_hospedagem_input'] = ui.input(label='Endereço', placeholder='Endereço').classes('w-full rounded-md').props('outlined')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Diária').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                        ui.label('Dias').classes('text-sm font-medium mb-1 w-1/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        edit_inputs['diaria_input'] = ui.number(label='Diária', placeholder='0.00', min=0, format='%.2f', on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-2/3 rounded-md')
-                        edit_inputs['dias_input'] = ui.number(label='Dias', placeholder='0', min=0, on_change=on_value_change_edit).props('outlined').classes('w-1/3 rounded-md')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                    with ui.row().classes("w-full no-wrap"):    
-                        edit_inputs['observacoes_hospedagem_input'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-40 filled input-style="resize: none"')
-
-#              ────────Serviços───────────────────── 
-
-                with ui.card().classes("w-full"):
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Serviços').classes('text-lg font-medium mb-1 w-2/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Descrição').classes('text-sm font-medium mb-1')
-                    with ui.row().classes('w-full no-wrap'):
-                        edit_inputs['descricao_servico_input'] = ui.input(label='Descrição do serviço').classes('w-full rounded-md').props('outlined')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Valor total dos serviços').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                    with ui.row().classes('w-full no-wrap'):
-                        edit_inputs['valor_total_servicos_input'] = ui.number(label='Valor total dos serviços', placeholder='0.00', min=0, format='%.2f', on_change=on_value_change_edit).props('prefix=R$ outlined').classes('w-2/3 rounded-md')
-                    with ui.row().classes('w-full no-wrap'):
-                        ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
-                    with ui.row().classes("w-full no-wrap"):    
-                        edit_inputs['observacoes_servico_input'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-40 filled input-style="resize: none"')
-
-        #              ─────────Total─────────────────────────
-
-                with ui.card().classes("w-full"):
-                    with ui.row().classes('gap-2 w-full'):
-                        with ui.column().classes("w-full"):
-                            ui.label('Valor Total').classes('text-sm font-medium mb-1')
-                            edit_inputs['valor_total_input'] = ui.number(label='Valor Total', placeholder='0.00',min=0, format='%.2f').props('prefix=R$ outlined readonly').classes('w-full rounded-md')
-
-                
-        with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-            ui.button('Confirmar', on_click=lambda: edit_orcamento(grid_ref,
-                                                                    edit_inputs['id_produto'].value,
-                                                                    edit_inputs['id_cliente'].value,
-
-                                                                    edit_inputs['pais_saida_ida'].value,
-                                                                    edit_inputs['cidade_saida_ida'].value,
-                                                                    edit_inputs['aeroporto_saida_ida'].value,
-                                                                    edit_inputs['data_saida_ida'].value,
-                                                                    edit_inputs['hora_saida_ida'].value,
-                                                                    edit_inputs['pais_destino_ida'].value,
-                                                                    edit_inputs['cidade_destino_ida'].value,
-                                                                    edit_inputs['aeroporto_destino_ida'].value,
-                                                                    edit_inputs['data_chegada_ida'].value,
-                                                                    edit_inputs['hora_chegada_ida'].value,
-                                                                    edit_inputs['valor_passagem_ida'].value,
-                                                                    edit_inputs['qtd_passagens_ida'].value,
-                                                                    edit_inputs['id_companhia_ida'].value,
-                                                                    edit_inputs['obs_ida'].value,
-
-                                                                    edit_inputs['pais_saida_volta'].value,
-                                                                    edit_inputs['cidade_saida_volta'].value,
-                                                                    edit_inputs['aeroporto_saida_volta'].value,
-                                                                    edit_inputs['data_saida_volta'].value,
-                                                                    edit_inputs['hora_saida_volta'].value,
-                                                                    edit_inputs['pais_destino_volta'].value,
-                                                                    edit_inputs['cidade_destino_volta'].value,
-                                                                    edit_inputs['aeroporto_destino_volta'].value,
-                                                                    edit_inputs['data_chegada_volta'].value,
-                                                                    edit_inputs['hora_chegada_volta'].value,
-                                                                    edit_inputs['valor_passagem_volta'].value,
-                                                                    edit_inputs['qtd_passagens_volta'].value,
-                                                                    edit_inputs['id_companhia_volta'].value,
-                                                                    edit_inputs['obs_volta'].value,
-
-                                                                    edit_inputs['endereco_hospedagem_input'].value,
-                                                                    edit_inputs['diaria_input'].value,
-                                                                    edit_inputs['dias_input'].value,
-                                                                    edit_inputs['observacoes_hospedagem_input'].value,
-
-                                                                    edit_inputs['descricao_servico_input'].value,
-                                                                    edit_inputs['valor_total_servicos_input'].value,
-                                                                    edit_inputs['observacoes_servico_input'].value,
-
-                                                                    edit_inputs['valor_total_input'].value,
-                                                                    edit_dialog,
-                                                                    selected_row)).classes('button button-primary').style('margin-right: 8px;')
-            ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
-            ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
-            ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar orçamento'))
-        
-        # Load options for edit selects
-        produtos = db_connection.get_produtos()
-        edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
-
-        clientes = db_connection.get_clientes()
-        edit_inputs['id_cliente'].options = {c['id_cliente']: f"{c['nome']}" for c in clientes} if clientes else {}
-
-        with ui.dialog() as adicionar_cliente, ui.card().classes('w-160').style('padding: 20px'):
-
-            estados_brasil = [
-                        "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", 
-                        "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", 
-                        "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
-                    ]
-
-            ui.label('Adicionar Cliente').classes('text-lg font-bold mb-4')
-            with ui.row().classes("w-full"):
-                with ui.row().classes('w-full no-wrap'):
-                    ui.label('Nome completo').classes('text-sm font-medium mb-1 w-3/4 align-self-start')
-                    ui.label('Sexo').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
-                with ui.row().classes("w-full no-wrap"):
-                    nome_cliente_input = ui.input(label='Nome do cliente', placeholder='Nome do cliente').classes('w-3/4').props('outlined rounded')
-                    sexo_cliente_input = ui.select(['F', 'M'], label='Sexo').classes('w-1/4').props('outlined rounded')
-                    
-                with ui.row().classes('w-full no-wrap'):
-                    ui.label('CPF').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
-                    ui.label('Data de nascimento').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
-                    ui.label('Telefone').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
-                with ui.row().classes('w-full no-wrap'):
-                    cpf_cliente_input = ui.input(label='CPF', placeholder='CPF').classes('w-2/6').props('mask="###.###.###-##" unmasked-value outlined rounded')
-                    data_nascimento_input = ui.date_input(label='Data de nascimento', placeholder='Data de nascimento').classes('w-2/6').props('outlined rounded')
-                    telefone_cliente_input = ui.input(label='Telefone', placeholder='Telefone').classes('w-2/6').props('mask="(##) #####-####" unmasked-value outlined rounded')
-                with ui.row().classes('w-full no-wrap'):
-                    ui.label('Estado').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
-                    ui.label('Cidade').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
-                with ui.row().classes('w-full no-wrap'):
-                    cidade_input = ui.select(estados_brasil, label='Estado',with_input=True).classes('w-2/6').props('outlined rounded')
-                    estado_input = ui.input(label='Cidade', placeholder='Cidade').classes('w-4/6').props('outlined rounded')
-                
             with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                    ui.button('Adicionar', on_click=lambda: db_connection.add_cliente(nome_cliente_input.value, sexo_cliente_input.value, data_nascimento_input.value, cpf_cliente_input.value, telefone_cliente_input.value, cidade_input.value, estado_input.value, adicionar_cliente, edit_inputs['id_cliente'])).classes('button button-primary').style('margin-right: 8px;')
-                    ui.button('Cancelar', on_click=lambda: adicionar_cliente.close()).classes('button button-secondary')
+                ui.button('Confirmar', on_click=lambda: edit_orcamento(grid_ref,
+                                                                        edit_inputs['id_produto'].value,
+                                                                        edit_inputs['id_cliente'].value,
+
+                                                                        edit_inputs['pais_saida_ida'].value,
+                                                                        edit_inputs['cidade_saida_ida'].value,
+                                                                        edit_inputs['aeroporto_saida_ida'].value,
+                                                                        edit_inputs['data_saida_ida'].value,
+                                                                        edit_inputs['hora_saida_ida'].value,
+                                                                        edit_inputs['pais_destino_ida'].value,
+                                                                        edit_inputs['cidade_destino_ida'].value,
+                                                                        edit_inputs['aeroporto_destino_ida'].value,
+                                                                        edit_inputs['data_chegada_ida'].value,
+                                                                        edit_inputs['hora_chegada_ida'].value,
+                                                                        edit_inputs['valor_passagem_ida'].value,
+                                                                        edit_inputs['qtd_passagens_ida'].value,
+                                                                        edit_inputs['id_companhia_ida'].value,
+                                                                        edit_inputs['obs_ida'].value,
+
+                                                                        edit_inputs['pais_saida_volta'].value,
+                                                                        edit_inputs['cidade_saida_volta'].value,
+                                                                        edit_inputs['aeroporto_saida_volta'].value,
+                                                                        edit_inputs['data_saida_volta'].value,
+                                                                        edit_inputs['hora_saida_volta'].value,
+                                                                        edit_inputs['pais_destino_volta'].value,
+                                                                        edit_inputs['cidade_destino_volta'].value,
+                                                                        edit_inputs['aeroporto_destino_volta'].value,
+                                                                        edit_inputs['data_chegada_volta'].value,
+                                                                        edit_inputs['hora_chegada_volta'].value,
+                                                                        edit_inputs['valor_passagem_volta'].value,
+                                                                        edit_inputs['qtd_passagens_volta'].value,
+                                                                        edit_inputs['id_companhia_volta'].value,
+                                                                        edit_inputs['obs_volta'].value,
+
+                                                                        edit_inputs['endereco_hospedagem_input'].value,
+                                                                        edit_inputs['diaria_input'].value,
+                                                                        edit_inputs['dias_input'].value,
+                                                                        edit_inputs['observacoes_hospedagem_input'].value,
+
+                                                                        edit_inputs['descricao_servico_input'].value,
+                                                                        edit_inputs['valor_total_servicos_input'].value,
+                                                                        edit_inputs['observacoes_servico_input'].value,
+
+                                                                        edit_inputs['valor_total_input'].value,
+                                                                        edit_dialog,
+                                                                        selected_row)).classes('button button-primary').style('margin-right: 8px;')
+                ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
+                ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
+                ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar orçamento'))
+            
+            # Load options for edit selects
+            produtos = db_connection.get_produtos()
+            edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
+
+            clientes = db_connection.get_clientes()
+            edit_inputs['id_cliente'].options = {c['id_cliente']: f"{c['nome']}" for c in clientes} if clientes else {}
+
+            with ui.dialog() as adicionar_cliente, ui.card().classes('w-160').style('padding: 20px'):
+
+                estados_brasil = [
+                            "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", 
+                            "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", 
+                            "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+                        ]
+
+                ui.label('Adicionar Cliente').classes('text-lg font-bold mb-4')
+                with ui.row().classes("w-full"):
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Nome completo').classes('text-sm font-medium mb-1 w-3/4 align-self-start')
+                        ui.label('Sexo').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                    with ui.row().classes("w-full no-wrap"):
+                        nome_cliente_input = ui.input(label='Nome do cliente', placeholder='Nome do cliente').classes('w-3/4').props('outlined rounded')
+                        sexo_cliente_input = ui.select(['F', 'M'], label='Sexo').classes('w-1/4').props('outlined rounded')
+                        
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('CPF').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                        ui.label('Data de nascimento').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                        ui.label('Telefone').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        cpf_cliente_input = ui.input(label='CPF', placeholder='CPF').classes('w-2/6').props('mask="###.###.###-##" unmasked-value outlined rounded')
+                        data_nascimento_input = ui.date_input(label='Data de nascimento', placeholder='Data de nascimento').classes('w-2/6').props('outlined rounded')
+                        telefone_cliente_input = ui.input(label='Telefone', placeholder='Telefone').classes('w-2/6').props('mask="(##) #####-####" unmasked-value outlined rounded')
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Estado').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                        ui.label('Cidade').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                    with ui.row().classes('w-full no-wrap'):
+                        cidade_input = ui.select(estados_brasil, label='Estado',with_input=True).classes('w-2/6').props('outlined rounded')
+                        estado_input = ui.input(label='Cidade', placeholder='Cidade').classes('w-4/6').props('outlined rounded')
+                    
+                with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
+                        ui.button('Adicionar', on_click=lambda: db_connection.add_cliente(nome_cliente_input.value, sexo_cliente_input.value, data_nascimento_input.value, cpf_cliente_input.value, telefone_cliente_input.value, cidade_input.value, estado_input.value, adicionar_cliente, edit_inputs['id_cliente'])).classes('button button-primary').style('margin-right: 8px;')
+                        ui.button('Cancelar', on_click=lambda: adicionar_cliente.close()).classes('button button-secondary')
+        edit_dialog.open()
 
         
         
