@@ -108,7 +108,7 @@ cidade_destino INT REFERENCES cidades(id),
 aeroporto_destino CHAR(3),
 dt_hr_chegada TIMESTAMP,
 valor_passagem NUMERIC(10,2),
-id_companhia INT REFERENCES companhia_aerea(id_companhia),
+id_companhia INT REFERENCES companhia_aerea(id_companhia) ON DELETE SET NULL,
 qtd_passagens INT,
 obs TEXT,
 ida_volta VARCHAR(10) CHECK (ida_volta IN ('Ida', 'Volta')),
@@ -121,9 +121,9 @@ CREATE TABLE orcamento (
 
 id_orcamento SERIAL PRIMARY KEY,
 id_produto INT REFERENCES produto(id_produto) ON DELETE CASCADE,
-id_cliente INT REFERENCES cliente(id_cliente),
-id_hospedagem INT REFERENCES hospedagem(id_hospedagem),
-id_servico INT REFERENCES servico(id_servico),
+id_cliente INT REFERENCES cliente(id_cliente) ON DELETE SET NULL,
+id_hospedagem INT REFERENCES hospedagem(id_hospedagem) ON DELETE SET NULL,
+id_servico INT REFERENCES servico(id_servico) ON DELETE SET NULL,
 valor_total NUMERIC (20,2)
 );
 
