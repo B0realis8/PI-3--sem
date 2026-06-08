@@ -12,7 +12,8 @@ entrada NUMERIC(20,2),
 n_parcelas INT,
 valor_parcelas NUMERIC(10,2),
 comissao NUMERIC,
-status_venda VARCHAR(20) CHECK (status_venda IN ('Pendente', 'Concluída', 'Cancelada'))
+status_venda VARCHAR(20) CHECK (status_venda IN ('Pendente', 'Concluída', 'Cancelada')),
+valor_total_gasto NUMERIC(20,2)
 
 );
 

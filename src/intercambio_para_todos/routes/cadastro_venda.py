@@ -47,6 +47,7 @@ def content() -> None:
             'cell-pass': 'x === "Concluída"',
             'cell-pending': 'x === "Pendente"',
         }},
+        {'field': 'valor_total_gasto', 'headerName': 'Valor Total Gasto', 'sortable': True, 'editable': False, 'valueFormatter': 'x.toLocaleString("pt-BR", {style: "currency", currency: "BRL"})'},
 
     ]
 
@@ -758,7 +759,11 @@ def content() -> None:
                         ui.label('Valor das parcelas').classes('text-sm font-medium mb-1 w-2/3')
                     with ui.row().classes('w-full no-wrap'):
                         valor_parcelas_input_edit = ui.number(label='Valor das parcelas', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined readonly').classes('w-2/3 rounded-md')
-                        
+                    with ui.row().classes('w-full no-wrap'):
+                        ui.label('Valor total gasto').classes('text-sm font-medium mb-1 w-2/3')
+                    with ui.row().classes('w-full no-wrap'):
+                        valor_total_gasto_input_edit = ui.number(label='Valor total gasto', placeholder='0.00', min=0, format='%.2f').props('prefix=R$ outlined').classes('w-2/3 rounded-md')
+
         with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
                     ui.button('Confirmar', on_click=lambda: edit_venda(grid_ref,
                                                                         selected_row,
@@ -770,6 +775,7 @@ def content() -> None:
                                                                         parcelas_input_edit.value,
                                                                         valor_parcelas_input_edit.value,
                                                                         comissao_input_edit.value,
+                                                                        valor_total_gasto_input_edit.value,
                                                                         edit_venda_dialog)).classes('button button-primary').style('margin-right: 8px;')
                     ui.button('Cancelar', on_click=lambda: edit_venda_dialog.close()).classes('button button-secondary')
                     ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_venda_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
@@ -876,6 +882,7 @@ def content() -> None:
             parcelas_input_edit.set_value(data['n_parcelas'])
             valor_parcelas_input_edit.set_value(data['valor_parcelas'])
             comissao_input_edit.set_value(data['comissao'])
+            valor_total_gasto_input_edit.set_value(data['valor_total_gasto'])
 
     grid.on('cellClicked', on_row_selected)
     grid.on('cellValueChanged', lambda event: on_cell_edit(grid_ref, selected_row))
@@ -897,7 +904,7 @@ def update_grid(grid_ref, data_venda, id_orcamento, forma_pgto, valor_final, ent
     grid.options['rowData'] = novos_valores
     grid.update()
             
-def edit_venda(grid_ref, selected_row, data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, dialog):
+def edit_venda(grid_ref, selected_row, data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, valor_total_gasto, dialog):
     notify(str(selected_row), type='success')
     row_data = selected_row['data']
     if not row_data:
@@ -906,7 +913,7 @@ def edit_venda(grid_ref, selected_row, data_venda, id_orcamento, forma_pgto, val
     
     id_venda = row_data.get('id_venda')
     
-    db_connection.update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda)
+    db_connection.update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda, valor_total_gasto)
     dialog.close()
 
     db_connection.update_dw()

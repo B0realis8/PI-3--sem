@@ -71,7 +71,9 @@ id_orcamento INT UNIQUE,
 id_servico INT REFERENCES servicos(id_servico) ON DELETE CASCADE,
 id_hospedagem INT REFERENCES hospedagem (id_hospedagem) ON DELETE CASCADE,
 comissao NUMERIC(10,2),
-valor_final NUMERIC(10,2)
+valor_final NUMERIC(10,2),
+status_venda VARCHAR(20) CHECK (status_venda IN ('Pendente', 'Concluída', 'Cancelada')),
+valor_total_gasto NUMERIC(20,2)
 
 );
 

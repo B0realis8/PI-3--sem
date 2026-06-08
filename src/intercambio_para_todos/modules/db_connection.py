@@ -394,13 +394,13 @@ def add_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parc
     conn.close()
     update_dw()
 
-def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda):
+def update_venda(data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda, valor_total_gasto):
 
     conn = db_connection()
     cur = conn.cursor()
     cur.execute(
-        "UPDATE vendas SET data_venda = %s, id_orcamento = %s, forma_pgto = %s, valor_final = %s, entrada = %s, n_parcelas = %s, valor_parcelas = %s, comissao = %s WHERE id_venda = %s",
-        (data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, id_venda)
+        "UPDATE vendas SET data_venda = %s, id_orcamento = %s, forma_pgto = %s, valor_final = %s, entrada = %s, n_parcelas = %s, valor_parcelas = %s, comissao = %s, valor_total_gasto = %s WHERE id_venda = %s",
+        (data_venda, id_orcamento, forma_pgto, valor_final, entrada, n_parcelas, valor_parcelas, comissao, valor_total_gasto, id_venda)
     )
     conn.commit()
     cur.close()
@@ -626,13 +626,13 @@ def update_dw(conn=None):
             conn.commit()
         cliente_df.to_sql('cliente', engine, if_exists='append', index=False)
 
-        cur.execute("SELECT v.id_venda, v.data_venda, o.id_produto, c.id_cliente, o.id_orcamento, o.id_servico, o.id_hospedagem, v.comissao, v.valor_final, v.status_venda FROM" \
+        cur.execute("SELECT v.id_venda, v.data_venda, o.id_produto, c.id_cliente, o.id_orcamento, o.id_servico, o.id_hospedagem, v.comissao, v.valor_final, v.status_venda, v.valor_total_gasto FROM" \
         " vendas v LEFT JOIN orcamento o ON v.id_orcamento = o.id_orcamento" \
         " LEFT JOIN cliente c ON o.id_cliente = c.id_cliente")
         vendas = cur.fetchall()
         vendas_df = pd.DataFrame(vendas)
 
-        cur.execute("SELECT v.id_voo, v.valor_passagem, v.qtd_passagens, comp.id_companhia, comp.nome_companhia, v.id_orcamento FROM voo v LEFT JOIN companhia_aerea comp ON comp.id_companhia = v.id_companhia")
+        cur.execute("SELECT v.id_voo, v.valor_passagem, v.qtd_passagens, comp.id_companhia, comp.nome_companhia, v.id_orcamento FROM voo v LEFT JOIN companhia_aerea comp ON comp.id_companhia = v.id_companhia WHERE v.id_orcamento IN (SELECT id_orcamento FROM vendas)")
         voo = cur.fetchall()
         voo_df = pd.DataFrame(voo)
 
