@@ -65,12 +65,21 @@ def get_data_from_db():
 def get_produtos():
     conn = db_connection()
     if conn:
-        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT p.*, paises.pais AS nome_pais ,c.cidade AS nome_cidade FROM {} p LEFT JOIN cidades c ON p.cidade = c.id LEFT JOIN paises ON c.id_pais = paises.id").format(sql.Identifier("produto"))
-        cur.execute(query)
-        produtos = cur.fetchall()
-        conn.close()
-        return produtos
+        try:
+            with conn.cursor(name='produtos_cursor', cursor_factory=pg.extras.RealDictCursor) as cur:
+                query = sql.SQL(
+                    "SELECT p.*, paises.pais AS nome_pais, c.cidade AS nome_cidade "
+                    "FROM {} p LEFT JOIN cidades c ON p.cidade = c.id "
+                    "LEFT JOIN paises ON c.id_pais = paises.id"
+                ).format(sql.Identifier("produto"))
+
+                cur.itersize = 100
+                cur.execute(query)
+
+                return list(cur)  # avoids generator serialization issue
+
+        finally:
+            conn.close()
     else:
         return []
 
