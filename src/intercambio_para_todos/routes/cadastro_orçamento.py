@@ -1,9 +1,13 @@
+import os
+
 from nicegui import ui,app,APIRouter,events
 from modules import db_connection
 from services.notifications import notify
 import re
 import json
 from datetime import datetime
+from docxtpl import DocxTemplate
+from docx2pdf import convert
 
 
 def format_dt(dt_str):
@@ -74,7 +78,7 @@ async def content() -> None:
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
         with ui.column().classes('gap-0'):
-            ui.label('Orçamentos').classes('page-title').style('color: #3393F1 !important;')
+            ui.label('Orçamentos').classes('page-title').style('color: #003A83 !important;')
             ui.label('Live overview · refreshes on demand').classes('text-sm text-muted')
         refresh_btn = ui.button('Atualizar', icon='refresh', color='white') \
             .props('flat no-caps').classes('button button-outline').on('click', lambda: grid.update())
@@ -414,7 +418,7 @@ async def content() -> None:
             selected_id = event.value
             # Fetch new data
             data = db_connection.get_produtos()
-            notify(str(data), type='info')
+
             for row in data:
                 if row['id_produto'] == selected_id:
                     data = row
@@ -447,7 +451,7 @@ async def content() -> None:
 
             valor_total_input.value = float(valor_passagem.value or 0) * int(qtd_passagens.value or 0) + float(valor_passagem_volta.value or 0) * int(qtd_passagens_volta.value or 0) + float(valor_total_servicos_input.value or 0) + (float(diaria_input.value or 0) * int(dias_input.value or 0))
         async def on_filter_pais(e, ida_volta):
-                notify(e.args[0], type='info')
+
                 search_term = e.args[0]
 
                 # Fetch filtered data
@@ -505,6 +509,16 @@ async def content() -> None:
                 filtered_options_volta = db_connection.search_database_cidades(search_term, pais_destino_volta.value)
                 cidade_destino_volta.options = filtered_options_volta
                 cidade_destino_volta.update()
+
+        async def on_filter_cidade_cliente(e):
+            # notify(e.args, type='info')
+            search_term = e.args[0]
+            # Fetch filtered data
+            filtered_options = db_connection.search_database_cidades(search_term, "31")
+            
+            # Update the UI options dynamically
+            cidade_input.options = filtered_options
+            cidade_input.update()
 
         with ui.dialog() as dialog, ui.card().classes('w-320').style('padding: 20px'):
             ui.label('Adicionar Orçamento').classes('text-lg font-bold mb-4')
@@ -774,10 +788,50 @@ async def content() -> None:
             companhias = db_connection.get_companhias()
             id_companhia_input.options = {c['id_companhia']: f"{c.get('nome_companhia', '')}" for c in companhias} if companhias else {}
             id_companhia_input.update()
+
+            companhias_volta = db_connection.get_companhias()
+            id_companhia_input_volta.options = {c['id_companhia']: f"{c.get('nome_companhia', '')}" for c in companhias_volta} if companhias_volta else {}
+            id_companhia_input_volta.update()
             
             clientes = db_connection.get_clientes()
             id_cliente_input.options = {c['id_cliente']: c['nome'] for c in clientes} if clientes else {}
             id_cliente_input.update()
+
+        with ui.dialog() as adicionar_cliente, ui.card().classes('w-160').style('padding: 20px'):
+
+            estados_brasil = [
+                        "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", 
+                        "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", 
+                        "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
+                    ]
+
+            ui.label('Adicionar Cliente').classes('text-lg font-bold mb-4')
+            with ui.row().classes("w-full"):
+                with ui.row().classes('w-full no-wrap'):
+                    ui.label('Nome completo').classes('text-sm font-medium mb-1 w-3/4 align-self-start')
+                    ui.label('Sexo').classes('text-sm font-medium mb-1 w-1/4 align-self-start')
+                with ui.row().classes("w-full no-wrap"):
+                    nome_cliente_input = ui.input(label='Nome do cliente', placeholder='Nome do cliente').classes('w-3/4').props('outlined rounded')
+                    sexo_cliente_input = ui.select(['F', 'M'], label='Sexo').classes('w-1/4').props('outlined rounded')
+                    
+                with ui.row().classes('w-full no-wrap'):
+                    ui.label('CPF').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                    ui.label('Data de nascimento').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                    ui.label('Telefone').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                with ui.row().classes('w-full no-wrap'):
+                    cpf_cliente_input = ui.input(label='CPF', placeholder='CPF').classes('w-2/6').props('mask="###.###.###-##" unmasked-value outlined rounded')
+                    data_nascimento_input = ui.date_input(label='Data de nascimento', placeholder='Data de nascimento').classes('w-2/6').props('outlined rounded')
+                    telefone_cliente_input = ui.input(label='Telefone', placeholder='Telefone').classes('w-2/6').props('mask="(##) #####-####" unmasked-value outlined rounded')
+                with ui.row().classes('w-full no-wrap'):
+                    ui.label('Estado').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                    ui.label('Cidade').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
+                with ui.row().classes('w-full no-wrap'):
+                    estado_input = ui.select(estados_brasil, label='Estado',with_input=True).classes('w-2/6').props('outlined rounded')
+                    cidade_input = ui.select([], label='Cidade',with_input=True).classes('w-4/6').on('filter', lambda e: on_filter_cidade_cliente(e))
+                
+            with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
+                    ui.button('Adicionar', on_click=lambda: db_connection.add_cliente(nome_cliente_input.value, sexo_cliente_input.value, data_nascimento_input.value, cpf_cliente_input.value, telefone_cliente_input.value, cidade_input.value, estado_input.value, adicionar_cliente, id_cliente_input)).classes('button button-primary').style('margin-right: 8px;')
+                    ui.button('Cancelar', on_click=lambda: adicionar_cliente.close()).classes('button button-secondary')
 
         dialog.open()
 
@@ -804,13 +858,23 @@ async def content() -> None:
             
             if data is None:
                 return  # No match found
-            notify(data['id_produto'], type='info')
+
             notify(f"ID do Produto selecionado: {data['id_produto']}", type='success')
             edit_inputs['id_produto'].set_value(data['id_produto'])
             edit_inputs['pais'].set_value(data['pais'])
             edit_inputs['cidade'].set_value(data['cidade'])
             edit_inputs['tipo'].set_value(data['tipo'])
             edit_inputs['valor_minimo'].set_value(data['valor_minimo'])
+        
+        async def on_filter_cidade_cliente(e):
+            # notify(e.args, type='info')
+            search_term = e.args[0]
+            # Fetch filtered data
+            filtered_options = db_connection.search_database_cidades(search_term, "31")
+            
+            # Update the UI options dynamically
+            cidade_input.options = filtered_options
+            cidade_input.update()
                 
 
         with ui.dialog() as edit_dialog, ui.card().classes('w-320').style('padding: 20px'):
@@ -874,6 +938,16 @@ async def content() -> None:
                     filtered_options_volta = db_connection.search_database_cidades(search_term, edit_inputs['pais_destino_volta'].value)
                     edit_inputs['cidade_destino_volta'].options = filtered_options_volta
                     edit_inputs['cidade_destino_volta'].update()
+            
+            async def on_filter_cidade_cliente(e):
+            # notify(e.args, type='info')
+                search_term = e.args[0]
+                # Fetch filtered data
+                filtered_options = db_connection.search_database_cidades(search_term, "31")
+                
+                # Update the UI options dynamically
+                cidade_input.options = filtered_options
+                cidade_input.update()
 
             ui.label('Editar Orçamento').classes('text-lg font-bold mb-4')
             with ui.row().classes("w-full no-wrap"):
@@ -1016,8 +1090,7 @@ async def content() -> None:
                                 ui.label('Observações').classes('text-sm font-medium mb-1 w-2/3 align-self-start')
                             with ui.row().classes("w-full no-wrap"):    
                                 edit_inputs['obs_volta'] = ui.textarea(label='Observações').classes('!w-full tight-textarea').props('input-class=h-50 filled input-style="resize: none"')
-                        
-                    
+                                   
     #              ────────Cliente─────────────────────
 
                 with ui.column().classes("w-1/2 no-wrap"):
@@ -1123,6 +1196,7 @@ async def content() -> None:
                                                                         edit_dialog,
                                                                         selected_row)).classes('button button-primary').style('margin-right: 8px;')
                 ui.button('Cancelar', on_click=lambda: edit_dialog.close()).classes('button button-secondary')
+                ui.button('Gerar orcamento', on_click= lambda :gerar_orcamento_docx(selected_row)).classes('button button-secondary').style('margin-right: 8px;')
                 ui.button('Excluir', on_click=lambda: delete_selected(grid_ref, selected_row, edit_dialog),color='red').classes('button button-danger ml-auto').style('margin-right: 8px;')
                 ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao editar orçamento'))
             
@@ -1162,11 +1236,11 @@ async def content() -> None:
                         ui.label('Estado').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
                         ui.label('Cidade').classes('text-sm font-medium mb-1 w-2/6 align-self-start')
                     with ui.row().classes('w-full no-wrap'):
-                        cidade_input = ui.select(estados_brasil, label='Estado',with_input=True).classes('w-2/6').props('outlined rounded')
-                        estado_input = ui.input(label='Cidade', placeholder='Cidade').classes('w-4/6').props('outlined rounded')
+                        estado_input = ui.select(estados_brasil, label='Estado',with_input=True).classes('w-2/6').props('outlined rounded')
+                        cidade_input = ui.select([], label='Cidade',with_input=True).classes('w-4/6').on('filter', lambda e: on_filter_cidade_cliente(e))
                     
                 with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                        ui.button('Adicionar', on_click=lambda: db_connection.add_cliente(nome_cliente_input.value, sexo_cliente_input.value, data_nascimento_input.value, cpf_cliente_input.value, telefone_cliente_input.value, cidade_input.value, estado_input.value, adicionar_cliente, edit_inputs['id_cliente'])).classes('button button-primary').style('margin-right: 8px;')
+                        ui.button('Adicionar', on_click=lambda: db_connection.add_cliente(nome_cliente_input.value, sexo_cliente_input.value, data_nascimento_input.value, cpf_cliente_input.value, telefone_cliente_input.value, estado_input.value, cidade_input.value, adicionar_cliente, edit_inputs['id_cliente'])).classes('button button-primary').style('margin-right: 8px;')
                         ui.button('Cancelar', on_click=lambda: adicionar_cliente.close()).classes('button button-secondary')
         edit_dialog.open()
 
@@ -1413,4 +1487,100 @@ async def delete_selected(grid_ref, selected_row, edit_dialog):
 
     edit_dialog.close()
 
+def gerar_orcamento_docx(selected_row):
+
+    row_data = selected_row['data']
+    if not row_data:
+        ui.notify('Nenhum orçamento selecionado', type='warning')
+        return
+    
+    orcamento = ("Orçamento #" + str(row_data.get('id_orcamento')))
+    cliente = row_data.get('nome')
+    produto = row_data.get('nome_produto')
+
+    lista_ida = row_data.get('voo_lista_ida')
+    companhia_ida = row_data.get('nome_companhia_ida')
+    qtd_passagens_ida = row_data.get('qtd_passagens_ida')
+    valor_passagem_ida = row_data.get('valor_passagem_ida')
+    obs_ida = row_data.get('obs_ida')
+
+    lista_volta = row_data.get('voo_lista_volta')
+    companhia_volta = row_data.get('nome_companhia_volta')
+    qtd_passagens_volta = row_data.get('qtd_passagens_volta')
+    valor_passagem_volta = row_data.get('valor_passagem_volta')
+    obs_volta = row_data.get('obs_volta')
+
+    endereco_hospedagem = row_data.get('endereco')
+    diaria = row_data.get('diaria')
+    qtd_dias = row_data.get('dias')
+    obs_hospedagem = row_data.get('obs')
+
+    descricao_servico = row_data.get('descricao')
+    valor_total_servicos = row_data.get('valor_total_servicos')
+    obs_servicos = row_data.get('obs_servicos')
+
+    valor_total = row_data.get('valor_total')
+
+    id_orcamento = row_data.get('id_orcamento')
+    # 1. Get the directory where this current Python script is running
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 2. Build the path to the assets folder (one level up from routes)
+    template_path = os.path.join(script_dir, "..", "assets", "orcamento.docx")
+
+    # 3. Load the template
+    doc = DocxTemplate(template_path)
+
+    ida = re.split(r'\n\s*\n', lista_ida.strip())
+ 
+    saida_ida = ida[0].strip().replace("Saída: ", "")   # "Saída: ..." + date/time
+    destino_ida  = ida[1].strip().replace("Chegada: ", "")   # "Chegada: ..." + date/time
+
+    volta = re.split(r'\n\s*\n', lista_volta.strip())
+ 
+    saida_volta = volta[0].strip().replace("Saída: ", "")   # "Saída: ..." + date/time
+    destino_volta  = volta[1].strip().replace("Chegada: ", "")   # "Chegada: ..." + date/time
+    
+
+
+    # 2. Define the data to fill in (the context)
+    context = {
+        "orcamento": orcamento,
+        "cliente": cliente,
+        "produto": produto,
+        "data": datetime.now().strftime("%d/%m/%Y"),
+
+        "saida_ida": saida_ida,
+        "destino_ida": destino_ida,
+        "cia_ida": companhia_ida,
+        "qtd_passagens_ida": qtd_passagens_ida,
+        "valor_passagem_ida": f"R$ {valor_passagem_ida:_.2f}".replace(".", ",").replace("_", "."),
+        "obs_ida": obs_ida,
+
+        "saida_volta": saida_volta,
+        "destino_volta": destino_volta,
+        "cia_volta": companhia_volta,
+        "qtd_passagens_volta": qtd_passagens_volta,
+        "valor_passagem_volta": f"R$ {valor_passagem_volta:_.2f}".replace(".", ",").replace("_", "."),
+        "obs_volta": obs_volta,
+
+        "descricao_servico": descricao_servico,
+        "valor_servico": f"R$ {valor_total_servicos:_.2f}".replace(".", ",").replace("_", "."),
+        "obs_servico": obs_servicos,
+
+        "endereco_hospedagem": endereco_hospedagem,
+        "diaria": f"R$ {diaria:_.2f}".replace(".", ",").replace("_", "."),
+        "dias": qtd_dias,
+        "obs_hospedagem": obs_hospedagem,
+
+        "valor_total": f"{valor_total:_.2f}".replace(".", ",").replace("_", ".")
+    }
+
+    # 3. Render the data into the template
+    doc.render(context)
+    
+
+    # 4. Save the populated document
+    doc.save("Orcamento " + str(id_orcamento) + " - " + cliente + ".docx")
+    # convert("Orcamento " + str(id_orcamento) + " - " + cliente + ".docx", "Orcamento " + str(id_orcamento) + " - " + cliente + ".pdf")
 
