@@ -182,7 +182,7 @@ async def content() -> None:
                 pais = row.get('pais_nome')
                 cidade = row.get('cidade_nome')
                 valor_minimo = row.get('valor_minimo')
-                id_cliente = row.get('id_cliente')
+                id_cliente = row.get('id_cliente') if row.get('id_cliente') else 1
                 valor_total = row.get('valor_total')
 
                 endereco_hospedagem = row.get('endereco')
@@ -298,7 +298,7 @@ async def content() -> None:
                 id_companhia_volta = data['id_companhia']
 
                 edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}               
-                edit_inputs['id_cliente'].options = {c['id_cliente']: f"{c['nome']}" for c in clientes} if clientes else {}
+                edit_inputs['id_cliente'].options = {str(c['id_cliente']): f"{c['nome']}" for c in clientes} if clientes else {}
                 edit_inputs['id_companhia_ida'].options = {c['id_companhia']: f"{c['nome_companhia']}" for c in companhias} if companhias else {}
                 edit_inputs['id_companhia_volta'].options = {c['id_companhia']: f"{c['nome_companhia']}" for c in companhias} if companhias else {}
 
@@ -366,7 +366,7 @@ async def content() -> None:
                     edit_inputs['pais'].set_value(pa),
                     edit_inputs['cidade'].set_value(ci),
                     edit_inputs['valor_minimo'].set_value(vm),
-                    edit_inputs['id_cliente'].set_value(c),
+                    (edit_inputs['id_cliente'].set_value(str(c)) if c is not None else 1),
 
                     edit_inputs['pais_saida_ida'].set_value(p_s_ida),
                     edit_inputs['cidade_saida_ida'].set_value(c_s_ida),
@@ -402,6 +402,8 @@ async def content() -> None:
                     edit_inputs['valor_total_input'].set_value(vt)
 
                 ), once=True)
+
+                notify(((str(id_cliente)) if id_cliente is not None else 1), type='info')
 
         grid.on('cellClicked', on_row_selected)        
 
@@ -1204,8 +1206,8 @@ async def content() -> None:
             produtos = db_connection.get_produtos()
             edit_inputs['nome_produto'].options = {p['id_produto']: p['nome_produto'] for p in produtos} if produtos else {}
 
-            clientes = db_connection.get_clientes()
-            edit_inputs['id_cliente'].options = {c['id_cliente']: f"{c['nome']}" for c in clientes} if clientes else {}
+            # clientes = db_connection.get_clientes()
+            # edit_inputs['id_cliente'].options = {c['id_cliente']: f"{c['nome']}" for c in clientes} if clientes else {}
 
             with ui.dialog() as adicionar_cliente, ui.card().classes('w-160').style('padding: 20px'):
 
@@ -1240,7 +1242,7 @@ async def content() -> None:
                         cidade_input = ui.select([], label='Cidade',with_input=True).classes('w-4/6').on('filter', lambda e: on_filter_cidade_cliente(e))
                     
                 with ui.row().classes("justify-end gap-2 q-mt-lg w-full"):
-                        ui.button('Adicionar', on_click=lambda: db_connection.add_cliente(nome_cliente_input.value, sexo_cliente_input.value, data_nascimento_input.value, cpf_cliente_input.value, telefone_cliente_input.value, estado_input.value, cidade_input.value, adicionar_cliente, edit_inputs['id_cliente'])).classes('button button-primary').style('margin-right: 8px;')
+                        ui.button('Adicionar', on_click=lambda: db_connection.add_cliente(nome_cliente_input.value, sexo_cliente_input.value, data_nascimento_input.value, cpf_cliente_input.value, telefone_cliente_input.value, cidade_input.value, estado_input.value, adicionar_cliente, edit_inputs['id_cliente'])).classes('button button-primary').style('margin-right: 8px;')
                         ui.button('Cancelar', on_click=lambda: adicionar_cliente.close()).classes('button button-secondary')
         edit_dialog.open()
 

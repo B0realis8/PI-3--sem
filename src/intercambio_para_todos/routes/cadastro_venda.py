@@ -818,7 +818,7 @@ def content() -> None:
            # notify(f"Orcamento selecionado: {data['id_orcamento']}, {data['pais_saida_ida']}, {data['cidade_saida_ida']}, {data['aeroporto_saida_ida']}", type='success')
 
             orcamentos_edit = db_connection.get_orcamento_simplificado(data['id_orcamento'])
-            id_orcamento_input_edit.options = {o['id_orcamento']: "Orçamento #"+str(o['id_orcamento'])+" - "+o['nome'] for o in orcamentos_edit} if orcamentos_edit else {}
+            id_orcamento_input_edit.options = {o['id_orcamento']: "Orçamento #"+str(o['id_orcamento'])+" - "+(o['nome'] or '') for o in orcamentos_edit} if orcamentos_edit else {}
             id_orcamento_input_edit.update()
 
             edit_venda_dialog.open()

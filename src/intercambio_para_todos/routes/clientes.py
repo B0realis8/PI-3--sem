@@ -231,12 +231,6 @@ async def content() -> None:
 
         return edit_dialog.open()
 
-            
-def on_cell_change(e):
-
-    updated_row = e.args["data"]
-    db_connection.update_produto(updated_row)
-    db_connection.get_produtos()
     
     
 def update_grid(grid_ref, nome, sexo, data_nascimento, cpf, telefone, cidade, estado, dialog):
