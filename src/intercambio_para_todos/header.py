@@ -49,7 +49,7 @@ def frame(title: str, version: str, get_logo_func=None):
         #             ui.icon('logout').classes('account-icon')
         #             ui.label('Logout')
 
-    header.style('background-color: #3393F1;')
+    header.style('background: linear-gradient(to right, #003A83, #006AE3);')
 
     # ── Sidebar nav ──────────────────────────────────────────────────────────────────
     with ui.left_drawer().classes('text-black relative').style('background-color: #F8FAFD; transition: width 0.3s ease-in-out;').props('breakpoint=400') as left_drawer:
