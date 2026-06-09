@@ -178,14 +178,27 @@ def get_voos_w_id(id):
 def get_clientes():
     conn = db_connection()
     if conn:
-        cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT cliente.*, cidades.cidade AS nome_cidade FROM {} LEFT JOIN cidades ON cliente.cidade = cidades.id").format(sql.Identifier("cliente"))
-        cur.execute(query)
-        clientes = cur.fetchall()
-        conn.close()
-        return clientes
-    else:
-        return []
+        try:
+            with conn.cursor(name='clientes_cursor', cursor_factory=pg.extras.RealDictCursor) as cur:
+                query = sql.SQL(
+                    "SELECT cliente.*, cidades.cidade AS nome_cidade "
+                    "FROM {} LEFT JOIN cidades ON cliente.cidade = cidades.id"
+                ).format(sql.Identifier("cliente"))
+                
+                cur.itersize = 100  # rows fetched per network roundtrip
+                cur.execute(query)
+                
+                for row in cur:
+                    yield row  # process one row at a time
+                    
+        finally:
+            conn.close()
+
+def delete_cliente(id_cliente):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM cliente WHERE id_cliente = %s", (id_cliente,))
+    conn.commit()
     
 def add_cliente(nome, sexo, data_nascimento, cpf, telefone, cidade, estado, adicionar_cliente, id_input_cliente=None):
     conn = db_connection()
@@ -267,9 +280,9 @@ def add_orcamento(id_produto,
 
     id_orcamento = cur.fetchone()[0]
 
-    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs, id_orcamento) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (pais_saida_ida, cidade_saida_ida, aeroporto_saida_ida, dt_hr_saida_ida, pais_destino_ida, cidade_destino_ida, aeroporto_destino_ida, dt_hr_chegada_ida, valor_passagem_ida, qtd_passagens_ida, id_companhia_ida, obs_ida, id_orcamento))
+    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs, id_orcamento, ida_volta) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (pais_saida_ida, cidade_saida_ida, aeroporto_saida_ida, dt_hr_saida_ida, pais_destino_ida, cidade_destino_ida, aeroporto_destino_ida, dt_hr_chegada_ida, valor_passagem_ida, qtd_passagens_ida, id_companhia_ida, obs_ida, id_orcamento, 'Ida'))
 
-    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs, id_orcamento) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (pais_saida_volta, cidade_saida_volta, aeroporto_saida_volta, dt_hr_saida_volta, pais_destino_volta, cidade_destino_volta, aeroporto_destino_volta, dt_hr_chegada_volta, valor_passagem_volta, qtd_passagens_volta, id_companhia_volta, obs_volta, id_orcamento))
+    cur.execute("INSERT INTO voo (pais_saida, cidade_saida, aeroporto_saida, dt_hr_saida, pais_destino, cidade_destino, aeroporto_destino, dt_hr_chegada, valor_passagem,qtd_passagens, id_companhia, obs, id_orcamento, ida_volta) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (pais_saida_volta, cidade_saida_volta, aeroporto_saida_volta, dt_hr_saida_volta, pais_destino_volta, cidade_destino_volta, aeroporto_destino_volta, dt_hr_chegada_volta, valor_passagem_volta, qtd_passagens_volta, id_companhia_volta, obs_volta, id_orcamento, 'Volta'))
 
     conn.commit()
     conn.close()
@@ -369,6 +382,13 @@ def delete_companhia(id_companhia):
     cur.execute("DELETE FROM companhia_aerea WHERE id_companhia = %s", (id_companhia,))
     conn.commit()
     cur.close()
+    conn.close()
+
+def add_companhia(nome_companhia, pais):
+    conn = db_connection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO companhia_aerea (nome_companhia, pais) VALUES (%s, %s)", (nome_companhia, pais))
+    conn.commit()
     conn.close()
     
 
@@ -489,7 +509,7 @@ def teste_get_orcamentos():
     conn = db_connection()
     if conn:
         cur = conn.cursor(cursor_factory=pg.extras.RealDictCursor)
-        query = sql.SQL("SELECT o.*, p.*, c.*, h.*, s.*,v.*,paises.pais AS pais_nome, cidades.cidade AS cidade_nome, \
+        query = sql.SQL("SELECT o.*, p.*, c.*, h.*, s.*,v.id_venda, v.data_venda, v.comissao, v.valor_final, v.status_venda, v.valor_total_gasto, v.forma_pgto, v.entrada, v.n_parcelas, v.valor_parcelas, paises.pais AS pais_nome, cidades.cidade AS cidade_nome, \
                         json_agg(voo_lista.*) FILTER (WHERE voo_lista.ida_volta = 'Ida') AS voo_lista_ida ,\
                         json_agg(voo_lista.*) FILTER (WHERE voo_lista.ida_volta = 'Volta') AS voo_lista_volta \
                         FROM {} o \
