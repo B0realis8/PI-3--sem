@@ -13,7 +13,7 @@ async def content() -> None:
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
         with ui.column().classes('gap-0'):
-            ui.label('Clientes').classes('page-title').style('color: #3393F1 !important;')
+            ui.label('Clientes').classes('page-title').style('color: #003A83 !important;')
             ui.label('Live overview · refreshes on demand').classes('text-sm text-muted')
         refresh_btn = ui.button('Atualizar', icon='refresh', color='white') \
             .props('flat no-caps').classes('button button-outline').on('click', lambda: grid.update())
@@ -42,7 +42,7 @@ async def content() -> None:
 
         grid = ui.aggrid({
             'columnDefs': column_defs,
-            'rowData': db_connection.get_clientes(),
+            'rowData': list(db_connection.get_clientes()),
             'rowSelection': {'mode': 'multiRow'},
             'defaultColDef': {'sortable': True},
             'autoSizeStrategy': {'type': 'fitGridWidth'},
@@ -171,7 +171,7 @@ async def content() -> None:
 
 
                     with ui.row().classes("justify-end gap-2 q-mt-lg"):
-                        ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, nome.value, cpf.value, telefone.value, sexo.value, data_nascimento.value, estado.value, cidade.value, dialog)).classes('button button-primary').style('margin-right: 8px;')
+                        ui.button('Cadastrar', on_click=lambda: update_grid(grid_ref, nome.value, sexo.value, data_nascimento.value, cpf.value, telefone.value, cidade.value,estado.value, dialog)).classes('button button-primary').style('margin-right: 8px;')
                         ui.button('Cancelar', on_click=lambda: dialog.close()).classes('button button-secondary')
                         ui.on_exception(lambda e: notify(str(e), type='error', title='Erro ao adicionar cliente'))
 
@@ -239,10 +239,10 @@ def on_cell_change(e):
     db_connection.get_produtos()
     
     
-def update_grid(grid_ref, nome, sexo, data_nascimento, cpf, telefone, estado, cidade, dialog):
+def update_grid(grid_ref, nome, sexo, data_nascimento, cpf, telefone, cidade, estado, dialog):
     db_connection.add_cliente(nome, sexo, data_nascimento, cpf, telefone, cidade, estado, dialog)
 
-    novos_valores = db_connection.get_clientes()
+    novos_valores = list(db_connection.get_clientes())
     
     # 3. Update AG Grid Data
     grid = grid_ref.get('grid')
@@ -259,7 +259,7 @@ def edit_cliente(grid_ref, selected_row, nome, sexo, data_nascimento, cpf, telef
     db_connection.update_cliente(nome, sexo, data_nascimento, cpf, telefone, cidade, estado, id_cliente)
     dialog.close()
     
-    novos_valores = db_connection.get_clientes()
+    novos_valores = list(db_connection.get_clientes())
     grid = grid_ref.get('grid')
     grid.options['rowData'] = novos_valores
     grid.update()
@@ -281,7 +281,7 @@ async def delete_selected(grid_ref,selected_row,edit_dialog):
     if result == True:
 
         db_connection.delete_cliente(id_cliente)
-        data = db_connection.get_clientes()
+        data = list(db_connection.get_clientes())
         grid.options['rowData'] = data
         grid.update()
         ui.notify('Item(s) excluído(s) com sucesso', type='info')
