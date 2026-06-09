@@ -13,7 +13,7 @@ async def content() -> None:
         # ── Header ──────────────────────────────────────────────────
     with ui.row().classes('w-full items-center justify-between mb-2'):
         with ui.column().classes('gap-0'):
-            ui.label('Produtos').classes('page-title').style('color: #3393F1 !important;')
+            ui.label('Produtos').classes('page-title').style('color: #003A83 !important;')
             ui.label('Live overview · refreshes on demand').classes('text-sm text-muted')
         refresh_btn = ui.button('Atualizar', icon='refresh', color='white') \
             .props('flat no-caps').classes('button button-outline').on('click', lambda: grid.update())
